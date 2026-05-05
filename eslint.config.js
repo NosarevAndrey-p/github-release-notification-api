@@ -12,6 +12,12 @@ export default defineConfig([
         ...globals.node,
         ...globals.jest
       }
-    }
+    },
+    rules: {
+      ...js.configs.recommended.rules,
+      "eqeqeq": "error",
+      "no-console": ["error", { allow: ["warn", "error", "info"] }],
+      "prefer-const": "error",
+    },
   },
 ]);
