@@ -11,7 +11,7 @@ const port = process.env.PORT || 3000;
 await db.initSchema();
 
 app.listen(port, () => {
-  console.log(`Server running on port ${port}`);
+  console.info(`Server running on port ${port}`);
 
   scan({ db, githubRequest, emailService });
   setInterval(() =>  scan({ db, githubRequest, emailService }), scanIntervalMs);
