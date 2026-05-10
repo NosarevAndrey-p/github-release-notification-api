@@ -1,30 +1,53 @@
 import fs from 'fs';
 import path from 'path';
-import Database from 'better-sqlite3';
+import pg from 'pg';
 import { queries } from './sqlQueries.js';
 
-export default class SqliteDatabase {
-  constructor(filename = 'database.sqlite') {
-    this.db = new Database(filename);
-    this.db.pragma('foreign_keys = ON');
+const { Pool } = pg;
+
+function translatePlaceholders(sql) {
+  let index = 0;
+  return sql.replace(/\?/g, () => `$${++index}`);
+}
+
+export default class PostgresDatabase {
+  constructor() {
+    const connectionString = process.env.DATABASE_URL;
+    if (!connectionString) {
+      throw new Error('DATABASE_URL must be defined for Postgres');
+    }
+
+    this.pool = new Pool({ connectionString });
   }
 
-  initSchema() {
-    const schemaPath = path.join(process.cwd(), 'db', 'schema.sqlite.sql');
+  async initSchema() {
+    const schemaPath = path.join(process.cwd(),'src', 'db', 'schema.pg.sql');
     const schema = fs.readFileSync(schemaPath, 'utf-8');
-    this.db.exec(schema);
+
+    await this.pool.query(schema);
   }
 
-  get(sql, params = []) {
-    return this.db.prepare(sql).get(...params);
+  async query(sql, params = []) {
+    const text = translatePlaceholders(sql);
+    return this.pool.query(text, params);
   }
 
-  all(sql, params = []) {
-    return this.db.prepare(sql).all(...params);
+  async get(sql, params = []) {
+    const result = await this.query(sql, params);
+    return result.rows[0] || null;
   }
 
-  run(sql, params = []) {
-    return this.db.prepare(sql).run(...params);
+  async all(sql, params = []) {
+    const result = await this.query(sql, params);
+    return result.rows;
+  }
+
+  async run(sql, params = []) {
+    const result = await this.query(sql, params);
+    return {
+      rowCount: result.rowCount,
+      rows: result.rows,
+    };
   }
 
   async getRepositoryByFullName(fullName) {
@@ -32,9 +55,9 @@ export default class SqliteDatabase {
   }
 
   async createRepository(fullName, lastSeenTag) {
-    const result = this.run(queries.insertRepository, [fullName, lastSeenTag]);
+    const result = await this.query(`${queries.insertRepository} RETURNING id`, [fullName, lastSeenTag]);
     return {
-      id: result.lastInsertRowid,
+      id: result.rows[0].id,
       full_name: fullName,
       last_seen_tag: lastSeenTag,
     };
@@ -65,8 +88,8 @@ export default class SqliteDatabase {
   }
 
   async countSubscriptionsByRepoId(repoId) {
-    const row = this.get(queries.countSubscriptionsByRepoId, [repoId]);
-    return row?.count ?? 0;
+    const row = await this.get(queries.countSubscriptionsByRepoId, [repoId]);
+    return Number(row?.count ?? 0);
   }
 
   async deleteRepositoryById(id) {

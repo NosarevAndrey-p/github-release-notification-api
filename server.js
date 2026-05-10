@@ -1,8 +1,8 @@
-import app from './app.js';
-import { scan } from './services/scannerService.js';
-import db from './db/database.js';
-import { githubRequest } from './lib/github.js';
-import emailService from './services/emailService.js';
+import app from './src/app.js';
+import { scan } from './src/services/scannerService.js';
+import db from './src/db/database.js';
+import { githubRequest } from './src/lib/github.js';
+import emailService from './src/services/emailService.js';
 import 'dotenv/config';
 
 const scanIntervalMs = Number(process.env.SCAN_INTERVAL) || 60000;
