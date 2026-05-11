@@ -71,4 +71,4 @@ class EmailService {
 
 const emailService = new EmailService(transporter);
 export default emailService;
-export { EmailService };
+export { EmailService }; 

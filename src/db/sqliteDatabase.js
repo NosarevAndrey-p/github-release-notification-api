@@ -1,10 +1,12 @@
 import fs from 'fs';
 import path from 'path';
 import Database from 'better-sqlite3';
+import DatabaseClient from './databaseClient.js';
 import { queries } from './sqlQueries.js';
 
-export default class SqliteDatabase {
+export default class SqliteDatabase extends DatabaseClient {
   constructor(filename = 'database.sqlite') {
+    super();
     this.db = new Database(filename);
     this.db.pragma('foreign_keys = ON');
   }

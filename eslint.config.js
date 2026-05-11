@@ -13,6 +13,10 @@ export default defineConfig([
     },
     rules: {
       ...js.configs.recommended.rules,
+      "no-unused-vars": ["error", { 
+        "argsIgnorePattern": "^_",
+        "varsIgnorePattern": "^_",
+      }],
       "eqeqeq": "error",
       "no-console": ["error", { allow: ["warn", "error", "info"] }],
       "prefer-const": "error",
