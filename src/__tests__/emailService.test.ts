@@ -1,19 +1,20 @@
 import { jest } from '@jest/globals';
 import { EmailService } from '../services/emailService.js';
+import nodemailer from 'nodemailer';
 
 describe('emailService', () => {
-  let mockTransporter: any;
-  let emailService: EmailService;
+  const mockTransporter = {
+    sendMail: jest.fn(),
+  } as unknown as jest.Mocked<nodemailer.Transporter>;
+
+  const emailService = new EmailService(mockTransporter);
 
   beforeEach(() => {
-    mockTransporter = {
-      sendMail: jest.fn(),
-    };
-    emailService = new EmailService(mockTransporter);
+    jest.clearAllMocks();
   });
 
   it('should send confirmation email', async () => {
-    mockTransporter.sendMail.mockResolvedValue({});
+    mockTransporter.sendMail.mockResolvedValue({} as unknown as nodemailer.SentMessageInfo);
 
     await emailService.sendConfirmationEmail(
       'test@example.com',
@@ -32,7 +33,7 @@ describe('emailService', () => {
   });
 
   it('should send release notification email', async () => {
-    mockTransporter.sendMail.mockResolvedValue({});
+    mockTransporter.sendMail.mockResolvedValue({} as unknown as nodemailer.SentMessageInfo);
 
     await emailService.sendReleaseNotificationEmail(
       'test@example.com',

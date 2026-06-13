@@ -1,22 +1,23 @@
 import { jest } from '@jest/globals';
 import { scan } from '../services/scannerService.js';
+import DatabaseClient, { Subscription, Repository } from '../db/databaseClient.js';
+import { EmailService } from '../services/emailService.js';
 
 describe('scannerService', () => {
-  let mockDb: any;
-  let mockGithubRequest: any;
-  let mockEmailService: any;
+  const mockDb = {
+    getConfirmedRepositories: jest.fn(),
+    getConfirmedSubscriptionsByRepoId: jest.fn(),
+    updateRepositoryLastSeenTag: jest.fn(),
+  } as unknown as jest.Mocked<DatabaseClient>;
+
+  const mockGithubRequest = jest.fn() as jest.Mock<(path: string) => Promise<Response>>;
+
+  const mockEmailService = {
+    sendReleaseNotificationEmail: jest.fn(),
+  } as unknown as jest.Mocked<EmailService>;
 
   beforeEach(() => {
-    mockDb = {
-      getConfirmedRepositories: jest.fn(),
-      getConfirmedSubscriptionsByRepoId: jest.fn(),
-      updateRepositoryLastSeenTag: jest.fn(),
-    };
-
-    mockGithubRequest = jest.fn();
-    mockEmailService = {
-      sendReleaseNotificationEmail: jest.fn(),
-    };
+    jest.clearAllMocks();
   });
 
   it('should do nothing if no repositories', async () => {
@@ -29,12 +30,12 @@ describe('scannerService', () => {
   });
 
   it('should skip repo with no new release', async () => {
-    mockDb.getConfirmedRepositories.mockResolvedValue([{ id: 1, full_name: 'owner/repo', last_seen_tag: 'v1.0' }]);
+    mockDb.getConfirmedRepositories.mockResolvedValue([{ id: 1, full_name: 'owner/repo', last_seen_tag: 'v1.0' } as Repository]);
     mockGithubRequest.mockResolvedValue({
       status: 200,
       ok: true,
       json: () => Promise.resolve({ tag_name: 'v1.0', html_url: 'https://github.com/owner/repo/releases/v1.0' }),
-    });
+    } as Response);
 
     await scan({ db: mockDb, githubRequest: mockGithubRequest, emailService: mockEmailService });
 
@@ -44,16 +45,16 @@ describe('scannerService', () => {
   });
 
   it('should process new release and send notifications', async () => {
-    mockDb.getConfirmedRepositories.mockResolvedValue([{ id: 1, full_name: 'owner/repo', last_seen_tag: 'v1.0' }]);
+    mockDb.getConfirmedRepositories.mockResolvedValue([{ id: 1, full_name: 'owner/repo', last_seen_tag: 'v1.0' } as Repository]);
     mockGithubRequest.mockResolvedValue({
       status: 200,
       ok: true,
       json: () => Promise.resolve({ tag_name: 'v1.1', html_url: 'https://github.com/owner/repo/releases/v1.1' }),
-    });
+    } as Response);
     mockDb.getConfirmedSubscriptionsByRepoId.mockResolvedValue([
       { email: 'user1@example.com', unsubscribe_token: 'token1' },
       { email: 'user2@example.com', unsubscribe_token: 'token2' },
-    ]);
+    ] as unknown as Subscription[]);
     mockEmailService.sendReleaseNotificationEmail.mockResolvedValue({});
 
     await scan({ db: mockDb, githubRequest: mockGithubRequest, emailService: mockEmailService });
@@ -71,8 +72,8 @@ describe('scannerService', () => {
   });
 
   it('should skip repo with 404 release', async () => {
-    mockDb.getConfirmedRepositories.mockResolvedValue([{ id: 1, full_name: 'owner/repo', last_seen_tag: null }]);
-    mockGithubRequest.mockResolvedValue({ status: 404, ok: false });
+    mockDb.getConfirmedRepositories.mockResolvedValue([{ id: 1, full_name: 'owner/repo', last_seen_tag: null } as Repository]);
+    mockGithubRequest.mockResolvedValue({ status: 404, ok: false } as Response);
 
     await scan({ db: mockDb, githubRequest: mockGithubRequest, emailService: mockEmailService });
 
@@ -84,8 +85,8 @@ describe('scannerService', () => {
     mockDb.getConfirmedRepositories.mockResolvedValue([
       { id: 1, full_name: 'owner/repo1', last_seen_tag: 'v1.0' },
       { id: 2, full_name: 'owner/repo2', last_seen_tag: 'v1.0' },
-    ]);
-    mockGithubRequest.mockResolvedValueOnce({ status: 429, ok: false });
+    ] as Repository[]);
+    mockGithubRequest.mockResolvedValueOnce({ status: 429, ok: false } as Response);
 
     await scan({ db: mockDb, githubRequest: mockGithubRequest, emailService: mockEmailService });
 
@@ -94,15 +95,15 @@ describe('scannerService', () => {
   });
 
   it('should handle email sending errors gracefully', async () => {
-    mockDb.getConfirmedRepositories.mockResolvedValue([{ id: 1, full_name: 'owner/repo', last_seen_tag: 'v1.0' }]);
+    mockDb.getConfirmedRepositories.mockResolvedValue([{ id: 1, full_name: 'owner/repo', last_seen_tag: 'v1.0' } as Repository]);
     mockGithubRequest.mockResolvedValue({
       status: 200,
       ok: true,
       json: () => Promise.resolve({ tag_name: 'v1.1', html_url: 'https://github.com/owner/repo/releases/v1.1' }),
-    });
+    } as Response);
     mockDb.getConfirmedSubscriptionsByRepoId.mockResolvedValue([
       { email: 'user@example.com', unsubscribe_token: 'token' },
-    ]);
+    ] as unknown as Subscription[]);
     mockEmailService.sendReleaseNotificationEmail.mockRejectedValue(new Error('Email failed'));
 
     await scan({ db: mockDb, githubRequest: mockGithubRequest, emailService: mockEmailService });

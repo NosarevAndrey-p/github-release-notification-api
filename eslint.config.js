@@ -30,5 +30,8 @@ export default tseslint.config(
         ...globals.jest,
       },
     },
+    rules: {
+      "@typescript-eslint/no-explicit-any": "off",
+    },
   },
 );

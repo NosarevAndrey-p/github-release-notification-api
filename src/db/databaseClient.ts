@@ -23,7 +23,7 @@ export interface UserSubscription {
 export interface DatabaseResult {
   rowCount?: number | null;
   lastInsertRowid?: number | bigint;
-  rows?: any[];
+  rows?: unknown[];
 }
 
 /**

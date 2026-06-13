@@ -5,49 +5,57 @@ import { jest } from '@jest/globals';
 
 describe('API Routes', () => {
   let app: Express;
-  let mockDeps: any;
+
+  const mockDb = {
+    getRepositoryByFullName: jest.fn(),
+    createRepository: jest.fn(),
+    getSubscriptionByEmailAndRepoId: jest.fn(),
+    createSubscription: jest.fn(),
+    getSubscriptionByConfirmToken: jest.fn(),
+    updateSubscriptionConfirmed: jest.fn(),
+    getSubscriptionByUnsubscribeToken: jest.fn(),
+    deleteSubscriptionById: jest.fn(),
+    countSubscriptionsByRepoId: jest.fn(),
+    deleteRepositoryById: jest.fn(),
+    getSubscriptionsByEmail: jest.fn(),
+  } as any;
+
+  const mockGithubRequest = jest.fn() as any;
+
+  const mockEmailService = {
+    sendConfirmationEmail: jest.fn(),
+  } as any;
+
+  const mockCrypto = {
+    randomUUID: jest.fn() as any,
+  };
+
+  const mockDeps = {
+    db: mockDb,
+    githubRequest: mockGithubRequest,
+    emailService: mockEmailService,
+    crypto: mockCrypto,
+  };
 
   beforeEach(() => {
-    mockDeps = {
-      db: {
-        getRepositoryByFullName: jest.fn(),
-        createRepository: jest.fn(),
-        getSubscriptionByEmailAndRepoId: jest.fn(),
-        createSubscription: jest.fn(),
-        getSubscriptionByConfirmToken: jest.fn(),
-        updateSubscriptionConfirmed: jest.fn(),
-        getSubscriptionByUnsubscribeToken: jest.fn(),
-        deleteSubscriptionById: jest.fn(),
-        countSubscriptionsByRepoId: jest.fn(),
-        deleteRepositoryById: jest.fn(),
-        getSubscriptionsByEmail: jest.fn(),
-      },
-      githubRequest: jest.fn(),
-      emailService: {
-        sendConfirmationEmail: jest.fn(),
-      },
-      crypto: {
-        randomUUID: jest.fn(),
-      },
-    };
-
+    jest.clearAllMocks();
     app = express();
     app.use(express.json());
-    app.use('/api', createApiRouter(mockDeps));
+    app.use('/api', createApiRouter(mockDeps as any));
   });
 
   describe('POST /api/subscribe', () => {
     it('should return 200 on successful subscription', async () => {
-      mockDeps.githubRequest.mockResolvedValue({
+      mockGithubRequest.mockResolvedValue({
         ok: true,
         status: 200,
         json: () => Promise.resolve({ id: 123, full_name: 'owner/repo' })
       });
-      mockDeps.db.getRepositoryByFullName.mockResolvedValue(null);
-      mockDeps.db.createRepository.mockResolvedValue({ id: 1, full_name: 'owner/repo', last_seen_tag: null });
-      mockDeps.db.getSubscriptionByEmailAndRepoId.mockResolvedValue(null);
-      mockDeps.crypto.randomUUID.mockReturnValue('12345678-1234-1234-1234-123456789012');
-      mockDeps.emailService.sendConfirmationEmail.mockResolvedValue({});
+      mockDb.getRepositoryByFullName.mockResolvedValue(null);
+      mockDb.createRepository.mockResolvedValue({ id: 1, full_name: 'owner/repo', last_seen_tag: null });
+      mockDb.getSubscriptionByEmailAndRepoId.mockResolvedValue(null);
+      mockCrypto.randomUUID.mockReturnValue('12345678-1234-1234-1234-123456789012');
+      mockEmailService.sendConfirmationEmail.mockResolvedValue({});
 
       const response = await request(app)
         .post('/api/subscribe')
@@ -76,7 +84,7 @@ describe('API Routes', () => {
     });
 
     it('should return 404 for non-existent repo', async () => {
-      mockDeps.githubRequest.mockResolvedValue({ status: 404, ok: false });
+      mockGithubRequest.mockResolvedValue({ status: 404, ok: false });
 
       const response = await request(app)
         .post('/api/subscribe')
@@ -87,13 +95,13 @@ describe('API Routes', () => {
     });
 
     it('should return 409 for duplicate confirmed subscription', async () => {
-      mockDeps.githubRequest.mockResolvedValue({
+      mockGithubRequest.mockResolvedValue({
         ok: true,
         status: 200,
         json: () => Promise.resolve({ id: 123, full_name: 'owner/repo' })
       });
-      mockDeps.db.getRepositoryByFullName.mockResolvedValue({ id: 1, full_name: 'owner/repo', last_seen_tag: null });
-      mockDeps.db.getSubscriptionByEmailAndRepoId.mockResolvedValue({ id: 1, confirmed: 1 });
+      mockDb.getRepositoryByFullName.mockResolvedValue({ id: 1, full_name: 'owner/repo', last_seen_tag: null });
+      mockDb.getSubscriptionByEmailAndRepoId.mockResolvedValue({ id: 1, confirmed: 1 });
 
       const response = await request(app)
         .post('/api/subscribe')
@@ -104,13 +112,13 @@ describe('API Routes', () => {
     });
 
     it('should return 200 and resend email for unconfirmed subscription', async () => {
-      mockDeps.githubRequest.mockResolvedValue({
+      mockGithubRequest.mockResolvedValue({
         ok: true,
         status: 200,
         json: () => Promise.resolve({ id: 123, full_name: 'owner/repo' })
       });
-      mockDeps.db.getRepositoryByFullName.mockResolvedValue({ id: 1, full_name: 'owner/repo', last_seen_tag: null });
-      mockDeps.db.getSubscriptionByEmailAndRepoId.mockResolvedValue({
+      mockDb.getRepositoryByFullName.mockResolvedValue({ id: 1, full_name: 'owner/repo', last_seen_tag: null });
+      mockDb.getSubscriptionByEmailAndRepoId.mockResolvedValue({
         id: 1,
         confirmed: 0,
         confirm_token: 'token',
@@ -123,7 +131,7 @@ describe('API Routes', () => {
 
       expect(response.status).toBe(200);
       expect(response.body.message).toBe('confirmation email resent');
-      expect(mockDeps.emailService.sendConfirmationEmail).toHaveBeenCalledWith(
+      expect(mockEmailService.sendConfirmationEmail).toHaveBeenCalledWith(
         'test@example.com',
         'owner/repo',
         'token',
@@ -134,7 +142,7 @@ describe('API Routes', () => {
 
   describe('GET /api/confirm/:token', () => {
     it('should return 200 on successful confirmation', async () => {
-      mockDeps.db.getSubscriptionByConfirmToken.mockResolvedValue({ id: 1, confirmed: 0 });
+      mockDb.getSubscriptionByConfirmToken.mockResolvedValue({ id: 1, confirmed: 0 });
 
       const response = await request(app).get('/api/confirm/12345678-1234-1234-1234-123456789012');
 
@@ -150,7 +158,7 @@ describe('API Routes', () => {
     });
 
     it('should return 404 for non-existent token', async () => {
-      mockDeps.db.getSubscriptionByConfirmToken.mockResolvedValue(null);
+      mockDb.getSubscriptionByConfirmToken.mockResolvedValue(null);
 
       const response = await request(app).get('/api/confirm/12345678-1234-1234-1234-123456789012');
 
@@ -161,8 +169,8 @@ describe('API Routes', () => {
 
   describe('GET /api/unsubscribe/:token', () => {
     it('should return 200 on successful unsubscription', async () => {
-      mockDeps.db.getSubscriptionByUnsubscribeToken.mockResolvedValue({ id: 1, repo_id: 1 });
-      mockDeps.db.countSubscriptionsByRepoId.mockResolvedValue(0);
+      mockDb.getSubscriptionByUnsubscribeToken.mockResolvedValue({ id: 1, repo_id: 1 });
+      mockDb.countSubscriptionsByRepoId.mockResolvedValue(0);
 
       const response = await request(app).get('/api/unsubscribe/12345678-1234-1234-1234-123456789012');
 
@@ -181,7 +189,7 @@ describe('API Routes', () => {
   describe('GET /api/subscriptions', () => {
     it('should return subscriptions for valid email', async () => {
       const mockSubscriptions = [{ email: 'test@example.com', repo: 'owner/repo', confirmed: false, last_seen_tag: null }];
-      mockDeps.db.getSubscriptionsByEmail.mockResolvedValue(mockSubscriptions);
+      mockDb.getSubscriptionsByEmail.mockResolvedValue(mockSubscriptions);
 
       const response = await request(app)
         .get('/api/subscriptions')
