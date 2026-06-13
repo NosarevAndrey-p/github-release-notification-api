@@ -10,12 +10,12 @@ const __dirname = path.dirname(__filename);
 const templatesPath = path.join(__dirname, '..', 'templates');
 
 const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST,
+  host: process.env.SMTP_HOST as string,
   port: Number(process.env.SMTP_PORT),
   secure: false,
   auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
+    user: process.env.SMTP_USER as string,
+    pass: process.env.SMTP_PASS as string,
   },
 });
 
@@ -29,17 +29,15 @@ const styles = {
   muted: `color: #57606a; font-size: 13px; margin-top: 12px;`,
 };
 
-async function renderTemplate(templateName, data) {
+async function renderTemplate(templateName: string, data: Record<string, unknown>): Promise<string> {
   const templateFile = path.join(templatesPath, `${templateName}.ejs`);
   return ejs.renderFile(templateFile, data);
 }
 
 class EmailService {
-  constructor(transporter) {
-    this.transporter = transporter;
-  }
+  constructor(private transporter: nodemailer.Transporter) {}
 
-  async sendConfirmationEmail(email, repo, confirmToken, unsubscribeToken) {
+  async sendConfirmationEmail(email: string, repo: string, confirmToken: string, unsubscribeToken: string) {
     const confirmUrl = `${BASE_URL}/api/confirm/${confirmToken}`;
     const unsubscribeUrl = `${BASE_URL}/api/unsubscribe/${unsubscribeToken}`;
 
@@ -54,7 +52,7 @@ class EmailService {
     });
   }
 
-  async sendReleaseNotificationEmail(email, repo, newTag, releaseUrl, unsubscribeToken) {
+  async sendReleaseNotificationEmail(email: string, repo: string, newTag: string, releaseUrl: string, unsubscribeToken: string) {
     const unsubscribeUrl = `${BASE_URL}/api/unsubscribe/${unsubscribeToken}`;
 
     const html = await renderTemplate('notification-email', {
@@ -71,4 +69,4 @@ class EmailService {
 
 const emailService = new EmailService(transporter);
 export default emailService;
-export { EmailService }; 
+export { EmailService };

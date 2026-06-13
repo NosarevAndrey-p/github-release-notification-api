@@ -86,14 +86,14 @@ describe('API Routes', () => {
       expect(response.body.error).toBe('repository not found');
     });
 
-    it('should return 409 for duplicate subscription', async () => {
+    it('should return 409 for duplicate confirmed subscription', async () => {
       mockDeps.githubRequest.mockResolvedValue({
         ok: true,
         status: 200,
         json: () => Promise.resolve({ id: 123, full_name: 'owner/repo' })
       });
       mockDeps.db.getRepositoryByFullName.mockResolvedValue({ id: 1 });
-      mockDeps.db.getSubscriptionByEmailAndRepoId.mockResolvedValue({ id: 1 });
+      mockDeps.db.getSubscriptionByEmailAndRepoId.mockResolvedValue({ id: 1, confirmed: 1 });
 
       const response = await request(app)
         .post('/api/subscribe')
@@ -101,6 +101,34 @@ describe('API Routes', () => {
 
       expect(response.status).toBe(409);
       expect(response.body.error).toBe('email already subscribed to this repository');
+    });
+
+    it('should return 200 and resend email for unconfirmed subscription', async () => {
+      mockDeps.githubRequest.mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve({ id: 123, full_name: 'owner/repo' })
+      });
+      mockDeps.db.getRepositoryByFullName.mockResolvedValue({ id: 1 });
+      mockDeps.db.getSubscriptionByEmailAndRepoId.mockResolvedValue({
+        id: 1,
+        confirmed: 0,
+        confirm_token: 'token',
+        unsubscribe_token: 'unsub'
+      });
+
+      const response = await request(app)
+        .post('/api/subscribe')
+        .send({ email: 'test@example.com', repo: 'owner/repo' });
+
+      expect(response.status).toBe(200);
+      expect(response.body.message).toBe('confirmation email resent');
+      expect(mockDeps.emailService.sendConfirmationEmail).toHaveBeenCalledWith(
+        'test@example.com',
+        'owner/repo',
+        'token',
+        'unsub'
+      );
     });
   });
 

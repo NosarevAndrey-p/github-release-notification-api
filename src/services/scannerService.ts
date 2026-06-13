@@ -1,10 +1,19 @@
-export async function scan({ db, githubRequest, emailService }) {
+import DatabaseClient from '../db/databaseClient.js';
+import { EmailService } from './emailService.js';
+
+interface ScannerDeps {
+  db: DatabaseClient;
+  githubRequest: (path: string) => Promise<Response>;
+  emailService: EmailService;
+}
+
+export async function scan({ db, githubRequest, emailService }: ScannerDeps) {
   const repos = await db.getConfirmedRepositories();
   if (!repos || repos.length === 0) return;
 
   for (const repo of repos) {
     const res = await githubRequest(`/repos/${repo.full_name}/releases/latest`);
-    const ok = res.ok ?? (res.status >= 200 && res.status < 300);
+    const ok = res.ok;
 
     if (res.status === 404) {
       continue;
@@ -20,7 +29,7 @@ export async function scan({ db, githubRequest, emailService }) {
       continue;
     }
 
-    const releaseData = await res.json();
+    const releaseData = await res.json() as { tag_name: string; html_url: string };
     const newTag = releaseData.tag_name;
     const releaseUrl = releaseData.html_url;
 

@@ -98,10 +98,10 @@ describe('subscriptionService', () => {
       ).rejects.toThrow('github rate limit exceeded');
     });
 
-    it('should throw ConflictError for duplicate subscription', async () => {
+    it('should throw ConflictError for duplicate confirmed subscription', async () => {
       mockGithubRequest.mockResolvedValue({ status: 200, ok: true });
       mockDb.getRepositoryByFullName.mockResolvedValue({ id: 1, full_name: 'owner/repo' });
-      mockDb.getSubscriptionByEmailAndRepoId.mockResolvedValue({ id: 1 });
+      mockDb.getSubscriptionByEmailAndRepoId.mockResolvedValue({ id: 1, confirmed: 1 });
 
       await expect(
         subscribeToRepo(
@@ -109,6 +109,31 @@ describe('subscriptionService', () => {
           { db: mockDb, githubRequest: mockGithubRequest, emailService: mockEmailService, crypto: mockCrypto }
         )
       ).rejects.toThrow('email already subscribed to this repository');
+    });
+
+    it('should resend email for unconfirmed subscription', async () => {
+      mockGithubRequest.mockResolvedValue({ status: 200, ok: true });
+      mockDb.getRepositoryByFullName.mockResolvedValue({ id: 1, full_name: 'owner/repo' });
+      mockDb.getSubscriptionByEmailAndRepoId.mockResolvedValue({
+        id: 1,
+        confirmed: 0,
+        confirm_token: 'token',
+        unsubscribe_token: 'unsub'
+      });
+      mockEmailService.sendConfirmationEmail.mockResolvedValue();
+
+      const result = await subscribeToRepo(
+        { email: 'test@example.com', repo: 'owner/repo' },
+        { db: mockDb, githubRequest: mockGithubRequest, emailService: mockEmailService, crypto: mockCrypto }
+      );
+
+      expect(result.message).toBe('confirmation email resent');
+      expect(mockEmailService.sendConfirmationEmail).toHaveBeenCalledWith(
+        'test@example.com',
+        'owner/repo',
+        'token',
+        'unsub'
+      );
     });
   });
 

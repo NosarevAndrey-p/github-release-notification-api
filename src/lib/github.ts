@@ -1,7 +1,7 @@
 const GITHUB_API = 'https://api.github.com';
 
-function githubHeaders() {
-  const headers = {
+function githubHeaders(): Record<string, string> {
+  const headers: Record<string, string> = {
     Accept: 'application/vnd.github+json',
   };
 
@@ -12,7 +12,7 @@ function githubHeaders() {
   return headers;
 }
 
-export async function githubRequest(path) {
+export async function githubRequest(path: string): Promise<Response> {
   const res = await fetch(`${GITHUB_API}${path}`, {
     headers: githubHeaders(),
   });

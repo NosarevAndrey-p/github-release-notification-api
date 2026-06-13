@@ -1,60 +1,61 @@
 import Subscription from '../models/subscription.js';
+import DatabaseClient from '../db/databaseClient.js';
+import { EmailService } from './emailService.js';
 
 const repoRegex = /^[^/]+\/[^/]+$/;
 const tokenRegex = /^[0-9a-f-]{36}$/i;
 
-class AppError extends Error {
-  constructor(message, statusCode = 500) {
+export class AppError extends Error {
+  constructor(message: string, public statusCode: number = 500) {
     super(message);
-    this.statusCode = statusCode;
   }
 }
 
-class BadRequestError extends AppError {
-  constructor(message) {
+export class BadRequestError extends AppError {
+  constructor(message: string) {
     super(message, 400);
   }
 }
 
-class NotFoundError extends AppError {
-  constructor(message) {
+export class NotFoundError extends AppError {
+  constructor(message: string) {
     super(message, 404);
   }
 }
 
-class ConflictError extends AppError {
-  constructor(message) {
+export class ConflictError extends AppError {
+  constructor(message: string) {
     super(message, 409);
   }
 }
 
-class RateLimitError extends AppError {
-  constructor(message) {
+export class RateLimitError extends AppError {
+  constructor(message: string) {
     super(message, 429);
   }
 }
 
-class ServiceError extends AppError {
-  constructor(message) {
+export class ServiceError extends AppError {
+  constructor(message: string) {
     super(message, 500);
   }
 }
 
-function validateEmail(email) {
+function validateEmail(email: string | undefined): asserts email is string {
   if (!email) throw new BadRequestError('email is required');
 }
 
-function validateRepo(repo) {
+function validateRepo(repo: string | undefined): asserts repo is string {
   if (!repo) throw new BadRequestError('repo is required');
   if (!repoRegex.test(repo)) throw new BadRequestError('invalid repo format');
 }
 
-function validateToken(token) {
+function validateToken(token: string | undefined): asserts token is string {
   if (!token) throw new BadRequestError('token is required');
   if (!tokenRegex.test(token)) throw new BadRequestError('invalid token');
 }
 
-async function fetchRepository(repo, githubRequest) {
+async function fetchRepository(repo: string, githubRequest: (path: string) => Promise<Response>) {
   const ghRes = await githubRequest(`/repos/${repo}`);
 
   if (ghRes.status === 404) {
@@ -72,11 +73,11 @@ async function fetchRepository(repo, githubRequest) {
   return ghRes;
 }
 
-async function fetchLatestReleaseTag(repo, githubRequest) {
+async function fetchLatestReleaseTag(repo: string, githubRequest: (path: string) => Promise<Response>): Promise<string | null> {
   const releaseRes = await githubRequest(`/repos/${repo}/releases/latest`);
 
   if (releaseRes.status === 200) {
-    const data = await releaseRes.json();
+    const data = await releaseRes.json() as { tag_name?: string };
     return data.tag_name || null;
   }
 
@@ -95,7 +96,16 @@ async function fetchLatestReleaseTag(repo, githubRequest) {
   return null;
 }
 
-export async function subscribeToRepo({ email, repo }, { db, githubRequest, emailService, crypto }) {
+interface SubscriptionDeps {
+  db: DatabaseClient;
+  githubRequest: (path: string) => Promise<Response>;
+  emailService: EmailService;
+  crypto: {
+    randomUUID: () => string;
+  };
+}
+
+export async function subscribeToRepo({ email, repo }: { email?: string; repo?: string }, { db, githubRequest, emailService, crypto }: SubscriptionDeps) {
   validateEmail(email);
   validateRepo(repo);
 
@@ -109,7 +119,12 @@ export async function subscribeToRepo({ email, repo }, { db, githubRequest, emai
 
   const existing = await db.getSubscriptionByEmailAndRepoId(email, repoRow.id);
   if (existing) {
-    throw new ConflictError('email already subscribed to this repository');
+    if (existing.confirmed) {
+      throw new ConflictError('email already subscribed to this repository');
+    }
+
+    await emailService.sendConfirmationEmail(email, repo, existing.confirm_token, existing.unsubscribe_token);
+    return { message: 'confirmation email resent' };
   }
 
   const confirmToken = crypto.randomUUID();
@@ -121,7 +136,7 @@ export async function subscribeToRepo({ email, repo }, { db, githubRequest, emai
   return { message: 'subscription successful, confirmation email sent' };
 }
 
-export async function confirmSubscription(token, { db }) {
+export async function confirmSubscription(token: string | undefined, { db }: { db: DatabaseClient }) {
   validateToken(token);
 
   const sub = await db.getSubscriptionByConfirmToken(token);
@@ -137,7 +152,7 @@ export async function confirmSubscription(token, { db }) {
   return { message: 'subscription confirmed successfully' };
 }
 
-export async function unsubscribeFromRepo(token, { db }) {
+export async function unsubscribeFromRepo(token: string | undefined, { db }: { db: DatabaseClient }) {
   validateToken(token);
 
   const sub = await db.getSubscriptionByUnsubscribeToken(token);
@@ -156,7 +171,7 @@ export async function unsubscribeFromRepo(token, { db }) {
   return { message: 'unsubscribed successfully' };
 }
 
-export async function getSubscriptions(email, { db }) {
+export async function getSubscriptions(email: string | undefined, { db }: { db: DatabaseClient }) {
   validateEmail(email);
 
   const rows = await db.getSubscriptionsByEmail(email);
@@ -164,10 +179,10 @@ export async function getSubscriptions(email, { db }) {
 }
 
 export {
-  AppError,
-  BadRequestError,
-  NotFoundError,
-  ConflictError,
-  RateLimitError,
-  ServiceError,
+  AppError as AppErrorExport,
+  BadRequestError as BadRequestErrorExport,
+  NotFoundError as NotFoundErrorExport,
+  ConflictError as ConflictErrorExport,
+  RateLimitError as RateLimitErrorExport,
+  ServiceError as ServiceErrorExport,
 };

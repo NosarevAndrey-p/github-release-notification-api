@@ -32,6 +32,7 @@ describe('scannerService', () => {
     mockDb.getConfirmedRepositories.mockResolvedValue([{ id: 1, full_name: 'owner/repo', last_seen_tag: 'v1.0' }]);
     mockGithubRequest.mockResolvedValue({
       status: 200,
+      ok: true,
       json: () => ({ tag_name: 'v1.0', html_url: 'https://github.com/owner/repo/releases/v1.0' }),
     });
 
@@ -46,6 +47,7 @@ describe('scannerService', () => {
     mockDb.getConfirmedRepositories.mockResolvedValue([{ id: 1, full_name: 'owner/repo', last_seen_tag: 'v1.0' }]);
     mockGithubRequest.mockResolvedValue({
       status: 200,
+      ok: true,
       json: () => ({ tag_name: 'v1.1', html_url: 'https://github.com/owner/repo/releases/v1.1' }),
     });
     mockDb.getConfirmedSubscriptionsByRepoId.mockResolvedValue([
@@ -70,7 +72,7 @@ describe('scannerService', () => {
 
   it('should skip repo with 404 release', async () => {
     mockDb.getConfirmedRepositories.mockResolvedValue([{ id: 1, full_name: 'owner/repo', last_seen_tag: null }]);
-    mockGithubRequest.mockResolvedValue({ status: 404 });
+    mockGithubRequest.mockResolvedValue({ status: 404, ok: false });
 
     await scan({ db: mockDb, githubRequest: mockGithubRequest, emailService: mockEmailService });
 
@@ -83,7 +85,7 @@ describe('scannerService', () => {
       { id: 1, full_name: 'owner/repo1', last_seen_tag: 'v1.0' },
       { id: 2, full_name: 'owner/repo2', last_seen_tag: 'v1.0' },
     ]);
-    mockGithubRequest.mockResolvedValueOnce({ status: 429 });
+    mockGithubRequest.mockResolvedValueOnce({ status: 429, ok: false });
 
     await scan({ db: mockDb, githubRequest: mockGithubRequest, emailService: mockEmailService });
 
@@ -95,6 +97,7 @@ describe('scannerService', () => {
     mockDb.getConfirmedRepositories.mockResolvedValue([{ id: 1, full_name: 'owner/repo', last_seen_tag: 'v1.0' }]);
     mockGithubRequest.mockResolvedValue({
       status: 200,
+      ok: true,
       json: () => ({ tag_name: 'v1.1', html_url: 'https://github.com/owner/repo/releases/v1.1' }),
     });
     mockDb.getConfirmedSubscriptionsByRepoId.mockResolvedValue([
