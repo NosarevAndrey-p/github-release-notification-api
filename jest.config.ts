@@ -1,4 +1,6 @@
-export default {
+import type { Config } from 'jest';
+
+const config: Config = {
   preset: 'ts-jest',
   testEnvironment: 'node',
   extensionsToTreatAsEsm: ['.ts'],
@@ -17,3 +19,5 @@ export default {
   collectCoverage: true,
   coverageDirectory: 'coverage',
 };
+
+export default config;

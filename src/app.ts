@@ -11,7 +11,7 @@ app.use(json());
 app.use(urlencoded({ extended: true }));
 
 app.use('/api',
-  createApiRouter({db, githubRequest, emailService, crypto, })
+  createApiRouter({ db, githubRequest, emailService, crypto })
 );
 
 export default app;

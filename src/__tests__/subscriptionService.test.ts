@@ -7,10 +7,10 @@ import {
 } from '../services/subscriptionService.js';
 
 describe('subscriptionService', () => {
-  let mockDb;
-  let mockGithubRequest;
-  let mockEmailService;
-  let mockCrypto;
+  let mockDb: any;
+  let mockGithubRequest: any;
+  let mockEmailService: any;
+  let mockCrypto: any;
 
   beforeEach(() => {
     mockDb = {
@@ -40,12 +40,12 @@ describe('subscriptionService', () => {
     it('should subscribe successfully for valid repo and email', async () => {
       mockGithubRequest
         .mockResolvedValueOnce({ status: 200, ok: true })
-        .mockResolvedValueOnce({ status: 200, ok: true, json: () => ({ tag_name: 'v1.0' }) });
+        .mockResolvedValueOnce({ status: 200, ok: true, json: () => Promise.resolve({ tag_name: 'v1.0' }) });
       mockDb.getRepositoryByFullName.mockResolvedValue(null);
-      mockDb.createRepository.mockResolvedValue({ id: 1, full_name: 'owner/repo' });
+      mockDb.createRepository.mockResolvedValue({ id: 1, full_name: 'owner/repo', last_seen_tag: 'v1.0' });
       mockDb.getSubscriptionByEmailAndRepoId.mockResolvedValue(null);
       mockCrypto.randomUUID.mockReturnValue('token123');
-      mockEmailService.sendConfirmationEmail.mockResolvedValue();
+      mockEmailService.sendConfirmationEmail.mockResolvedValue({});
 
       const result = await subscribeToRepo(
         { email: 'test@example.com', repo: 'owner/repo' },
@@ -100,7 +100,7 @@ describe('subscriptionService', () => {
 
     it('should throw ConflictError for duplicate confirmed subscription', async () => {
       mockGithubRequest.mockResolvedValue({ status: 200, ok: true });
-      mockDb.getRepositoryByFullName.mockResolvedValue({ id: 1, full_name: 'owner/repo' });
+      mockDb.getRepositoryByFullName.mockResolvedValue({ id: 1, full_name: 'owner/repo', last_seen_tag: null });
       mockDb.getSubscriptionByEmailAndRepoId.mockResolvedValue({ id: 1, confirmed: 1 });
 
       await expect(
@@ -113,14 +113,14 @@ describe('subscriptionService', () => {
 
     it('should resend email for unconfirmed subscription', async () => {
       mockGithubRequest.mockResolvedValue({ status: 200, ok: true });
-      mockDb.getRepositoryByFullName.mockResolvedValue({ id: 1, full_name: 'owner/repo' });
+      mockDb.getRepositoryByFullName.mockResolvedValue({ id: 1, full_name: 'owner/repo', last_seen_tag: null });
       mockDb.getSubscriptionByEmailAndRepoId.mockResolvedValue({
         id: 1,
         confirmed: 0,
         confirm_token: 'token',
         unsubscribe_token: 'unsub'
       });
-      mockEmailService.sendConfirmationEmail.mockResolvedValue();
+      mockEmailService.sendConfirmationEmail.mockResolvedValue({});
 
       const result = await subscribeToRepo(
         { email: 'test@example.com', repo: 'owner/repo' },
@@ -157,8 +157,8 @@ describe('subscriptionService', () => {
       mockDb.getSubscriptionByConfirmToken.mockResolvedValue(null);
 
       await expect(
-        confirmSubscription('invalid-token', { db: mockDb })
-      ).rejects.toThrow('invalid token');
+        confirmSubscription('12345678-1234-1234-1234-123456789012', { db: mockDb })
+      ).rejects.toThrow('Token not found');
     });
 
     it('should return already confirmed message', async () => {
@@ -193,8 +193,8 @@ describe('subscriptionService', () => {
       mockDb.getSubscriptionByUnsubscribeToken.mockResolvedValue(null);
 
       await expect(
-        unsubscribeFromRepo('invalid-token', { db: mockDb })
-      ).rejects.toThrow('invalid token');
+        unsubscribeFromRepo('12345678-1234-1234-1234-123456789012', { db: mockDb })
+      ).rejects.toThrow('Token not found');
     });
   });
 

@@ -1,11 +1,11 @@
 import request from 'supertest';
-import express from 'express';
+import express, { Express } from 'express';
 import createApiRouter from '../routes/api.js';
 import { jest } from '@jest/globals';
 
 describe('API Routes', () => {
-  let app;
-  let mockDeps;
+  let app: Express;
+  let mockDeps: any;
 
   beforeEach(() => {
     mockDeps = {
@@ -44,10 +44,10 @@ describe('API Routes', () => {
         json: () => Promise.resolve({ id: 123, full_name: 'owner/repo' })
       });
       mockDeps.db.getRepositoryByFullName.mockResolvedValue(null);
-      mockDeps.db.createRepository.mockResolvedValue({ id: 1 });
+      mockDeps.db.createRepository.mockResolvedValue({ id: 1, full_name: 'owner/repo', last_seen_tag: null });
       mockDeps.db.getSubscriptionByEmailAndRepoId.mockResolvedValue(null);
       mockDeps.crypto.randomUUID.mockReturnValue('12345678-1234-1234-1234-123456789012');
-      mockDeps.emailService.sendConfirmationEmail.mockResolvedValue();
+      mockDeps.emailService.sendConfirmationEmail.mockResolvedValue({});
 
       const response = await request(app)
         .post('/api/subscribe')
@@ -76,7 +76,7 @@ describe('API Routes', () => {
     });
 
     it('should return 404 for non-existent repo', async () => {
-      mockDeps.githubRequest.mockResolvedValue({ status: 404 });
+      mockDeps.githubRequest.mockResolvedValue({ status: 404, ok: false });
 
       const response = await request(app)
         .post('/api/subscribe')
@@ -92,7 +92,7 @@ describe('API Routes', () => {
         status: 200,
         json: () => Promise.resolve({ id: 123, full_name: 'owner/repo' })
       });
-      mockDeps.db.getRepositoryByFullName.mockResolvedValue({ id: 1 });
+      mockDeps.db.getRepositoryByFullName.mockResolvedValue({ id: 1, full_name: 'owner/repo', last_seen_tag: null });
       mockDeps.db.getSubscriptionByEmailAndRepoId.mockResolvedValue({ id: 1, confirmed: 1 });
 
       const response = await request(app)
@@ -109,7 +109,7 @@ describe('API Routes', () => {
         status: 200,
         json: () => Promise.resolve({ id: 123, full_name: 'owner/repo' })
       });
-      mockDeps.db.getRepositoryByFullName.mockResolvedValue({ id: 1 });
+      mockDeps.db.getRepositoryByFullName.mockResolvedValue({ id: 1, full_name: 'owner/repo', last_seen_tag: null });
       mockDeps.db.getSubscriptionByEmailAndRepoId.mockResolvedValue({
         id: 1,
         confirmed: 0,
@@ -152,10 +152,10 @@ describe('API Routes', () => {
     it('should return 404 for non-existent token', async () => {
       mockDeps.db.getSubscriptionByConfirmToken.mockResolvedValue(null);
 
-      const response = await request(app).get('/api/confirm/invalid-token');
+      const response = await request(app).get('/api/confirm/12345678-1234-1234-1234-123456789012');
 
-      expect(response.status).toBe(400);
-      expect(response.body.error).toBe('invalid token');
+      expect(response.status).toBe(404);
+      expect(response.body.error).toBe('Token not found');
     });
   });
 

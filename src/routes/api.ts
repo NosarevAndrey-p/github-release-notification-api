@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { Response as ExpressResponse } from 'express';
 import {
   subscribeToRepo,
   confirmSubscription,
@@ -6,11 +6,22 @@ import {
   getSubscriptions,
   AppError,
 } from '../services/subscriptionService.js';
+import DatabaseClient from '../db/databaseClient.js';
+import { EmailService } from '../services/emailService.js';
 
-function createApiRouter(deps) {
+interface ApiDeps {
+  db: DatabaseClient;
+  githubRequest: (path: string) => Promise<Response>;
+  emailService: EmailService;
+  crypto: {
+    randomUUID: () => string;
+  };
+}
+
+function createApiRouter(deps: ApiDeps) {
   const apiRouter = express.Router();
 
-  function handleError(res, error) {
+  function handleError(res: ExpressResponse, error: unknown) {
     if (error instanceof AppError) {
       return res.status(error.statusCode).json({ error: error.message });
     }
@@ -54,7 +65,7 @@ function createApiRouter(deps) {
 
   apiRouter.get('/subscriptions', async (req, res) => {
     try {
-      const result = await getSubscriptions(req.query.email, deps);
+      const result = await getSubscriptions(req.query.email as string | undefined, deps);
       return res.status(200).json(result);
     } catch (error) {
       return handleError(res, error);
@@ -64,4 +75,4 @@ function createApiRouter(deps) {
   return apiRouter;
 }
 
-export default createApiRouter; 
+export default createApiRouter;

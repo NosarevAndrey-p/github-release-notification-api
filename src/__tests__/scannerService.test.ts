@@ -2,9 +2,9 @@ import { jest } from '@jest/globals';
 import { scan } from '../services/scannerService.js';
 
 describe('scannerService', () => {
-  let mockDb;
-  let mockGithubRequest;
-  let mockEmailService;
+  let mockDb: any;
+  let mockGithubRequest: any;
+  let mockEmailService: any;
 
   beforeEach(() => {
     mockDb = {
@@ -33,7 +33,7 @@ describe('scannerService', () => {
     mockGithubRequest.mockResolvedValue({
       status: 200,
       ok: true,
-      json: () => ({ tag_name: 'v1.0', html_url: 'https://github.com/owner/repo/releases/v1.0' }),
+      json: () => Promise.resolve({ tag_name: 'v1.0', html_url: 'https://github.com/owner/repo/releases/v1.0' }),
     });
 
     await scan({ db: mockDb, githubRequest: mockGithubRequest, emailService: mockEmailService });
@@ -48,13 +48,13 @@ describe('scannerService', () => {
     mockGithubRequest.mockResolvedValue({
       status: 200,
       ok: true,
-      json: () => ({ tag_name: 'v1.1', html_url: 'https://github.com/owner/repo/releases/v1.1' }),
+      json: () => Promise.resolve({ tag_name: 'v1.1', html_url: 'https://github.com/owner/repo/releases/v1.1' }),
     });
     mockDb.getConfirmedSubscriptionsByRepoId.mockResolvedValue([
       { email: 'user1@example.com', unsubscribe_token: 'token1' },
       { email: 'user2@example.com', unsubscribe_token: 'token2' },
     ]);
-    mockEmailService.sendReleaseNotificationEmail.mockResolvedValue();
+    mockEmailService.sendReleaseNotificationEmail.mockResolvedValue({});
 
     await scan({ db: mockDb, githubRequest: mockGithubRequest, emailService: mockEmailService });
 
@@ -98,7 +98,7 @@ describe('scannerService', () => {
     mockGithubRequest.mockResolvedValue({
       status: 200,
       ok: true,
-      json: () => ({ tag_name: 'v1.1', html_url: 'https://github.com/owner/repo/releases/v1.1' }),
+      json: () => Promise.resolve({ tag_name: 'v1.1', html_url: 'https://github.com/owner/repo/releases/v1.1' }),
     });
     mockDb.getConfirmedSubscriptionsByRepoId.mockResolvedValue([
       { email: 'user@example.com', unsubscribe_token: 'token' },
