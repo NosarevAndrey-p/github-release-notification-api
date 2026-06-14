@@ -1,11 +1,12 @@
 import { jest } from '@jest/globals';
-import { scan } from '../services/scannerService.js';
+import { scan, ScannerDeps } from '../services/scannerService.js';
 import { RateLimitError } from '../types/errors.js';
 
 describe('scannerService', () => {
   let mockDb: any;
   let mockGithubService: any;
-  let mockEmailService: any;
+  let mockNotifier: any;
+  let deps: ScannerDeps;
 
   beforeEach(() => {
     mockDb = {
@@ -16,8 +17,14 @@ describe('scannerService', () => {
     mockGithubService = {
       fetchLatestRelease: jest.fn(),
     };
-    mockEmailService = {
-      sendNotificationEmail: jest.fn(),
+    mockNotifier = {
+      notify: jest.fn().mockResolvedValue(undefined),
+    };
+    deps = {
+      repoStore: mockDb,
+      subStore: mockDb,
+      githubService: mockGithubService,
+      notifier: mockNotifier,
     };
     jest.spyOn(console, 'error').mockImplementation(() => {});
     jest.spyOn(console, 'warn').mockImplementation(() => {});
@@ -27,7 +34,7 @@ describe('scannerService', () => {
     jest.restoreAllMocks();
   });
 
-  it('should notify users of new releases', async () => {
+  it('should delegate notifications when new releases are found', async () => {
     mockDb.getConfirmedRepositories.mockResolvedValue([
       { id: 1, full_name: 'owner/repo', last_seen_tag: 'v1.0' },
     ]);
@@ -37,17 +44,14 @@ describe('scannerService', () => {
     });
     mockDb.getConfirmedSubscriptionsByRepoId.mockResolvedValue([
       { email: 'user1@example.com', unsubscribe_token: 'token1' },
-      { email: 'user2@example.com', unsubscribe_token: 'token2' },
     ]);
 
-    await scan({ repoStore: mockDb, subStore: mockDb, githubService: mockGithubService, emailService: mockEmailService });
+    await scan(deps);
 
-    expect(mockEmailService.sendNotificationEmail).toHaveBeenCalledTimes(2);
-    expect(mockEmailService.sendNotificationEmail).toHaveBeenCalledWith(
-      'user1@example.com',
+    expect(mockNotifier.notify).toHaveBeenCalledWith(
       'owner/repo',
       'v1.1',
-      'token1'
+      expect.arrayContaining([expect.objectContaining({ email: 'user1@example.com' })])
     );
     expect(mockDb.updateRepositoryLastSeenTag).toHaveBeenCalledWith(1, 'v1.1');
   });
@@ -58,9 +62,9 @@ describe('scannerService', () => {
     ]);
     mockGithubService.fetchLatestRelease.mockResolvedValue({ tag_name: 'v1.0' });
 
-    await scan({ repoStore: mockDb, subStore: mockDb, githubService: mockGithubService, emailService: mockEmailService });
+    await scan(deps);
 
-    expect(mockEmailService.sendNotificationEmail).not.toHaveBeenCalled();
+    expect(mockNotifier.notify).not.toHaveBeenCalled();
     expect(mockDb.updateRepositoryLastSeenTag).not.toHaveBeenCalled();
   });
 
@@ -70,26 +74,9 @@ describe('scannerService', () => {
     ]);
     mockGithubService.fetchLatestRelease.mockRejectedValue(new RateLimitError('github rate limit exceeded'));
 
-    await scan({ repoStore: mockDb, subStore: mockDb, githubService: mockGithubService, emailService: mockEmailService });
+    await scan(deps);
 
     expect(console.warn).toHaveBeenCalledWith('Rate limit hit, stopping scan early');
-    expect(mockEmailService.sendNotificationEmail).not.toHaveBeenCalled();
-  });
-
-  it('should handle email failures gracefully', async () => {
-    mockDb.getConfirmedRepositories.mockResolvedValue([
-      { id: 1, full_name: 'owner/repo', last_seen_tag: 'v1.0' },
-    ]);
-    mockGithubService.fetchLatestRelease.mockResolvedValue({ tag_name: 'v1.1' });
-    mockDb.getConfirmedSubscriptionsByRepoId.mockResolvedValue([
-      { email: 'user1@example.com', unsubscribe_token: 'token1' },
-    ]);
-    mockEmailService.sendNotificationEmail.mockRejectedValue(new Error('Email failed'));
-
-    await scan({ repoStore: mockDb, subStore: mockDb, githubService: mockGithubService, emailService: mockEmailService });
-
-    expect(mockEmailService.sendNotificationEmail).toHaveBeenCalled();
-    expect(mockDb.updateRepositoryLastSeenTag).toHaveBeenCalledWith(1, 'v1.1');
-    expect(console.error).toHaveBeenCalled();
+    expect(mockNotifier.notify).not.toHaveBeenCalled();
   });
 });

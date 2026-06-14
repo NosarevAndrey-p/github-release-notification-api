@@ -1,20 +1,24 @@
 import { jest } from '@jest/globals';
-import nodemailer from 'nodemailer';
 import { sendConfirmationEmail, sendNotificationEmail } from '../services/emailService.js';
+import { EmailDeps } from '../types/email.js';
 
 describe('EmailService', () => {
   let mockTransporter: any;
-  const mockDeps = {
-    baseUrl: 'http://localhost:3000',
-    transporter: null as any
-  };
+  let mockRenderer: any;
+  let mockDeps: EmailDeps;
 
   beforeEach(() => {
     mockTransporter = {
-      sendMail: jest.fn() as any,
+      send: jest.fn().mockResolvedValue(undefined),
     };
-    mockTransporter.sendMail.mockResolvedValue({ messageId: '123' });
-    mockDeps.transporter = mockTransporter as unknown as nodemailer.Transporter;
+    mockRenderer = {
+      render: jest.fn().mockResolvedValue('<html>Test Template</html>'),
+    };
+    mockDeps = {
+      baseUrl: 'http://localhost:3000',
+      transporter: mockTransporter,
+      renderer: mockRenderer,
+    };
   });
 
   it('should send confirmation email', async () => {
@@ -26,12 +30,14 @@ describe('EmailService', () => {
       mockDeps
     );
 
-    expect(mockTransporter.sendMail).toHaveBeenCalledWith(
-      expect.objectContaining({
-        to: 'test@example.com',
-        subject: expect.stringContaining('Confirm subscription to owner/repo'),
-        html: expect.stringContaining('owner/repo'),
-      })
+    expect(mockRenderer.render).toHaveBeenCalledWith(
+      'confirmation-email',
+      expect.objectContaining({ repo: 'owner/repo' })
+    );
+    expect(mockTransporter.send).toHaveBeenCalledWith(
+      'test@example.com',
+      expect.stringContaining('Confirm subscription to owner/repo'),
+      '<html>Test Template</html>'
     );
   });
 
@@ -44,12 +50,14 @@ describe('EmailService', () => {
       mockDeps
     );
 
-    expect(mockTransporter.sendMail).toHaveBeenCalledWith(
-      expect.objectContaining({
-        to: 'test@example.com',
-        subject: expect.stringContaining('New release v1.0 for owner/repo'),
-        html: expect.stringContaining('v1.0'),
-      })
+    expect(mockRenderer.render).toHaveBeenCalledWith(
+      'notification-email',
+      expect.objectContaining({ repo: 'owner/repo', newTag: 'v1.0' })
+    );
+    expect(mockTransporter.send).toHaveBeenCalledWith(
+      'test@example.com',
+      expect.stringContaining('New release v1.0 for owner/repo'),
+      '<html>Test Template</html>'
     );
   });
 });

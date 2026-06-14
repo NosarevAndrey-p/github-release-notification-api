@@ -1,48 +1,24 @@
-import { IRepositoryStore, ISubscriptionStore } from '../types/database.js';
-import { IEmailService } from '../types/email.js';
+import { IRepositoryStore, ISubscriptionStore, Repository } from '../types/database.js';
 import { IGitHubService } from '../types/github.js';
+import { INotifier } from '../types/notification.js';
 import { RateLimitError } from '../types/errors.js';
 
-interface ScannerDeps {
+export interface ScannerDeps {
   repoStore: IRepositoryStore;
   subStore: ISubscriptionStore;
   githubService: IGitHubService;
-  emailService: IEmailService;
+  notifier: INotifier;
 }
 
-export async function scan({ repoStore, subStore, githubService, emailService }: ScannerDeps) {
+export async function scan(deps: ScannerDeps) {
+  const { repoStore } = deps;
   const repos = await repoStore.getConfirmedRepositories();
+  
   if (!repos || repos.length === 0) return;
 
   for (const repo of repos) {
     try {
-      const release = await githubService.fetchLatestRelease(repo.full_name);
-
-      if (!release) {
-        continue;
-      }
-
-      const newTag = release.tag_name;
-
-      if (!newTag || newTag === repo.last_seen_tag) {
-        continue;
-      }
-
-      const subscriptions = await subStore.getConfirmedSubscriptionsByRepoId(repo.id);
-      for (const sub of subscriptions) {
-        try {
-          await emailService.sendNotificationEmail(
-            sub.email,
-            repo.full_name,
-            newTag,
-            sub.unsubscribe_token
-          );
-        } catch (error) {
-          console.error(`Failed to email ${sub.email}`, error);
-        }
-      }
-
-      await repoStore.updateRepositoryLastSeenTag(repo.id, newTag);
+      await processRepository(repo, deps);
     } catch (error) {
       if (error instanceof RateLimitError) {
         console.warn('Rate limit hit, stopping scan early');
@@ -51,4 +27,20 @@ export async function scan({ repoStore, subStore, githubService, emailService }:
       console.error(`Scan failed for ${repo.full_name}:`, error);
     }
   }
+}
+
+async function processRepository(repo: Repository, deps: ScannerDeps) {
+  const { githubService, subStore, repoStore, notifier } = deps;
+  
+  const release = await githubService.fetchLatestRelease(repo.full_name);
+  if (!release || !release.tag_name || release.tag_name === repo.last_seen_tag) {
+    return;
+  }
+
+  const subscriptions = await subStore.getConfirmedSubscriptionsByRepoId(repo.id);
+  if (subscriptions.length > 0) {
+    await notifier.notify(repo.full_name, release.tag_name, subscriptions);
+  }
+
+  await repoStore.updateRepositoryLastSeenTag(repo.id, release.tag_name);
 }
