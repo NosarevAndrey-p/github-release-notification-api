@@ -1,4 +1,4 @@
-import Subscription, { SubscriptionDeps } from '../types/subscription.js';
+import SubscriptionModel, { SubscriptionDeps } from '../types/subscription.js';
 import { 
   NotFoundError, 
   ConflictError, 
@@ -80,5 +80,5 @@ export async function getSubscriptions(email: string | undefined, { subStore }: 
   validate.validateEmail(email);
 
   const rows = await subStore.getSubscriptionsByEmail(email);
-  return rows.map(row => new Subscription(row));
+  return rows.map(row => new SubscriptionModel(row));
 }

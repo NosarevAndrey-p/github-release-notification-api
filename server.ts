@@ -20,6 +20,15 @@ app.listen(config.app.port, () => {
     notifier 
   };
 
-  scan(scannerDeps);
-  setInterval(() => scan(scannerDeps), config.app.scanInterval);
+  const runScanner = async () => {
+    try {
+      await scan(scannerDeps);
+    } catch (error) {
+      console.error('Scanner error:', error);
+    } finally {
+      setTimeout(runScanner, config.app.scanInterval);
+    }
+  };
+
+  runScanner();
 });

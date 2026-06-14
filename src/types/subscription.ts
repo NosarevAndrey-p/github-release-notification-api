@@ -14,7 +14,7 @@ export interface SubscriptionDeps {
   crypto: UUIDProvider;
 }
 
-export default class Subscription {
+export default class SubscriptionModel {
   public email: string;
   public repo: string;
   public confirmed: boolean;
