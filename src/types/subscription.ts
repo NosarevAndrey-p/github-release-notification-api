@@ -1,14 +1,15 @@
-import { UserSubscription, IDatabaseClient } from './database.js';
+import { UserSubscription, IRepositoryStore, ISubscriptionStore } from './database.js';
 import { IEmailService } from './email.js';
-import { GithubRequest } from './github.js';
+import { IGitHubService } from './github.js';
 
 export interface UUIDProvider {
   randomUUID: () => string;
 }
 
 export interface SubscriptionDeps {
-  db: IDatabaseClient;
-  githubRequest: GithubRequest;
+  repoStore: IRepositoryStore;
+  subStore: ISubscriptionStore;
+  githubService: IGitHubService;
   emailService: IEmailService;
   crypto: UUIDProvider;
 }

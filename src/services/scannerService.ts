@@ -1,22 +1,22 @@
-import { IDatabaseClient } from '../types/database.js';
+import { IRepositoryStore, ISubscriptionStore } from '../types/database.js';
 import { IEmailService } from '../types/email.js';
-import { fetchLatestRelease } from './githubService.js';
-import { GithubRequest } from '../types/github.js';
+import { IGitHubService } from '../types/github.js';
 import { RateLimitError } from '../types/errors.js';
 
 interface ScannerDeps {
-  db: IDatabaseClient;
-  githubRequest: GithubRequest;
+  repoStore: IRepositoryStore;
+  subStore: ISubscriptionStore;
+  githubService: IGitHubService;
   emailService: IEmailService;
 }
 
-export async function scan({ db, githubRequest, emailService }: ScannerDeps) {
-  const repos = await db.getConfirmedRepositories();
+export async function scan({ repoStore, subStore, githubService, emailService }: ScannerDeps) {
+  const repos = await repoStore.getConfirmedRepositories();
   if (!repos || repos.length === 0) return;
 
   for (const repo of repos) {
     try {
-      const release = await fetchLatestRelease(repo.full_name, { githubRequest });
+      const release = await githubService.fetchLatestRelease(repo.full_name);
 
       if (!release) {
         continue;
@@ -28,7 +28,7 @@ export async function scan({ db, githubRequest, emailService }: ScannerDeps) {
         continue;
       }
 
-      const subscriptions = await db.getConfirmedSubscriptionsByRepoId(repo.id);
+      const subscriptions = await subStore.getConfirmedSubscriptionsByRepoId(repo.id);
       for (const sub of subscriptions) {
         try {
           await emailService.sendNotificationEmail(
@@ -42,7 +42,7 @@ export async function scan({ db, githubRequest, emailService }: ScannerDeps) {
         }
       }
 
-      await db.updateRepositoryLastSeenTag(repo.id, newTag);
+      await repoStore.updateRepositoryLastSeenTag(repo.id, newTag);
     } catch (error) {
       if (error instanceof RateLimitError) {
         console.warn('Rate limit hit, stopping scan early');
@@ -52,5 +52,3 @@ export async function scan({ db, githubRequest, emailService }: ScannerDeps) {
     }
   }
 }
-
-

@@ -4,7 +4,6 @@ import {
   NotFoundError, 
   ConflictError, 
 } from '../types/errors.js';
-import { fetchRepository, fetchLatestRelease } from './githubService.js';
 
 const repoRegex = /^[^/]+\/[^/]+$/;
 const tokenRegex = /^[0-9a-f-]{36}$/i;
@@ -23,13 +22,13 @@ function validateToken(token: string | undefined): asserts token is string {
   if (!tokenRegex.test(token)) throw new BadRequestError('invalid token');
 }
 
-async function getOrCreateRepository(repo: string, { db, githubRequest }: SubscriptionDeps) {
-  await fetchRepository(repo, { githubRequest });
+async function getOrCreateRepository(repo: string, { repoStore, githubService }: SubscriptionDeps) {
+  await githubService.fetchRepository(repo);
 
-  let repoRow = await db.getRepositoryByFullName(repo);
+  let repoRow = await repoStore.getRepositoryByFullName(repo);
   if (!repoRow) {
-    const release = await fetchLatestRelease(repo, { githubRequest });
-    repoRow = await db.createRepository(repo, release?.tag_name || null);
+    const release = await githubService.fetchLatestRelease(repo);
+    repoRow = await repoStore.createRepository(repo, release?.tag_name || null);
   }
   return repoRow;
 }
@@ -40,7 +39,7 @@ export async function subscribeToRepo({ email, repo }: { email?: string; repo?: 
 
   const repoRow = await getOrCreateRepository(repo, deps);
 
-  const existing = await deps.db.getSubscriptionByEmailAndRepoId(email, repoRow.id);
+  const existing = await deps.subStore.getSubscriptionByEmailAndRepoId(email, repoRow.id);
   if (existing) {
     if (existing.confirmed) {
       throw new ConflictError('email already subscribed to this repository');
@@ -53,16 +52,16 @@ export async function subscribeToRepo({ email, repo }: { email?: string; repo?: 
   const confirmToken = deps.crypto.randomUUID();
   const unsubscribeToken = deps.crypto.randomUUID();
 
-  await deps.db.createSubscription(email, repoRow.id, confirmToken, unsubscribeToken);
+  await deps.subStore.createSubscription(email, repoRow.id, confirmToken, unsubscribeToken);
   await deps.emailService.sendConfirmationEmail(email, repo, confirmToken, unsubscribeToken);
 
   return { message: 'subscription successful, confirmation email sent' };
 }
 
-export async function confirmSubscription(token: string | undefined, { db }: SubscriptionDeps) {
+export async function confirmSubscription(token: string | undefined, { subStore }: SubscriptionDeps) {
   validateToken(token);
 
-  const sub = await db.getSubscriptionByConfirmToken(token);
+  const sub = await subStore.getSubscriptionByConfirmToken(token);
   if (!sub) {
     throw new NotFoundError('Token not found');
   }
@@ -71,32 +70,32 @@ export async function confirmSubscription(token: string | undefined, { db }: Sub
     return { message: 'subscription already confirmed' };
   }
 
-  await db.updateSubscriptionConfirmed(sub.id);
+  await subStore.updateSubscriptionConfirmed(sub.id);
   return { message: 'subscription confirmed successfully' };
 }
 
-export async function unsubscribeFromRepo(token: string | undefined, { db }: SubscriptionDeps) {
+export async function unsubscribeFromRepo(token: string | undefined, { subStore, repoStore }: SubscriptionDeps) {
   validateToken(token);
 
-  const sub = await db.getSubscriptionByUnsubscribeToken(token);
+  const sub = await subStore.getSubscriptionByUnsubscribeToken(token);
   if (!sub) {
     throw new NotFoundError('Token not found');
   }
 
   const repoId = sub.repo_id;
-  await db.deleteSubscriptionById(sub.id);
+  await subStore.deleteSubscriptionById(sub.id);
 
-  const remaining = await db.countSubscriptionsByRepoId(repoId);
+  const remaining = await subStore.countSubscriptionsByRepoId(repoId);
   if (remaining === 0) {
-    await db.deleteRepositoryById(repoId);
+    await repoStore.deleteRepositoryById(repoId);
   }
 
   return { message: 'unsubscribed successfully' };
 }
 
-export async function getSubscriptions(email: string | undefined, { db }: SubscriptionDeps) {
+export async function getSubscriptions(email: string | undefined, { subStore }: SubscriptionDeps) {
   validateEmail(email);
 
-  const rows = await db.getSubscriptionsByEmail(email);
+  const rows = await subStore.getSubscriptionsByEmail(email);
   return rows.map(row => new Subscription(row));
 }

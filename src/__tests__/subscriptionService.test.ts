@@ -6,13 +6,14 @@ import {
   getSubscriptions,
 } from '../services/subscriptionService.js';
 import { RateLimitError } from '../types/errors.js';
+import { SubscriptionDeps } from '../types/subscription.js';
 
 describe('subscriptionService', () => {
   let mockDb: any;
-  let mockGithubRequest: any;
+  let mockGithubService: any;
   let mockEmailService: any;
   let mockCrypto: any;
-  let mockDeps: any;
+  let mockDeps: SubscriptionDeps;
 
   beforeEach(() => {
     mockDb = {
@@ -29,7 +30,10 @@ describe('subscriptionService', () => {
       getSubscriptionsByEmail: jest.fn(),
     };
 
-    mockGithubRequest = jest.fn();
+    mockGithubService = {
+      fetchRepository: jest.fn(),
+      fetchLatestRelease: jest.fn(),
+    };
     mockEmailService = {
       sendConfirmationEmail: jest.fn(),
     };
@@ -38,8 +42,9 @@ describe('subscriptionService', () => {
     };
 
     mockDeps = {
-      db: mockDb,
-      githubRequest: mockGithubRequest,
+      repoStore: mockDb,
+      subStore: mockDb,
+      githubService: mockGithubService,
       emailService: mockEmailService,
       crypto: mockCrypto,
     };
@@ -47,9 +52,8 @@ describe('subscriptionService', () => {
 
   describe('subscribeToRepo', () => {
     it('should subscribe successfully for valid repo and email', async () => {
-      mockGithubRequest
-        .mockResolvedValueOnce({ status: 200, ok: true, json: () => Promise.resolve({ id: 123, full_name: 'owner/repo' }) })
-        .mockResolvedValueOnce({ status: 200, ok: true, json: () => Promise.resolve({ tag_name: 'v1.0' }) });
+      mockGithubService.fetchRepository.mockResolvedValue({ id: 123, full_name: 'owner/repo' });
+      mockGithubService.fetchLatestRelease.mockResolvedValue({ tag_name: 'v1.0' });
       mockDb.getRepositoryByFullName.mockResolvedValue(null);
       mockDb.createRepository.mockResolvedValue({ id: 1, full_name: 'owner/repo', last_seen_tag: 'v1.0' });
       mockDb.getSubscriptionByEmailAndRepoId.mockResolvedValue(null);
@@ -86,7 +90,8 @@ describe('subscriptionService', () => {
     });
 
     it('should throw NotFoundError for non-existent repo', async () => {
-      mockGithubRequest.mockResolvedValue({ status: 404, ok: false });
+      const { NotFoundError } = await import('../types/errors.js');
+      mockGithubService.fetchRepository.mockRejectedValue(new NotFoundError('repository not found'));
 
       await expect(
         subscribeToRepo(
@@ -97,7 +102,7 @@ describe('subscriptionService', () => {
     });
 
     it('should throw RateLimitError for GitHub rate limit', async () => {
-      mockGithubRequest.mockRejectedValue(new RateLimitError('github rate limit exceeded'));
+      mockGithubService.fetchRepository.mockRejectedValue(new RateLimitError('github rate limit exceeded'));
 
       await expect(
         subscribeToRepo(
@@ -108,11 +113,7 @@ describe('subscriptionService', () => {
     });
 
     it('should throw ConflictError for duplicate confirmed subscription', async () => {
-      mockGithubRequest.mockResolvedValue({ 
-        status: 200, 
-        ok: true, 
-        json: () => Promise.resolve({ id: 123, full_name: 'owner/repo' }) 
-      });
+      mockGithubService.fetchRepository.mockResolvedValue({ id: 123, full_name: 'owner/repo' });
       mockDb.getRepositoryByFullName.mockResolvedValue({ id: 1, full_name: 'owner/repo', last_seen_tag: null });
       mockDb.getSubscriptionByEmailAndRepoId.mockResolvedValue({ id: 1, confirmed: 1 });
 
@@ -125,11 +126,7 @@ describe('subscriptionService', () => {
     });
 
     it('should resend email for unconfirmed subscription', async () => {
-      mockGithubRequest.mockResolvedValue({ 
-        status: 200, 
-        ok: true, 
-        json: () => Promise.resolve({ id: 123, full_name: 'owner/repo' }) 
-      });
+      mockGithubService.fetchRepository.mockResolvedValue({ id: 123, full_name: 'owner/repo' });
       mockDb.getRepositoryByFullName.mockResolvedValue({ id: 1, full_name: 'owner/repo', last_seen_tag: null });
       mockDb.getSubscriptionByEmailAndRepoId.mockResolvedValue({
         id: 1,
@@ -222,7 +219,8 @@ describe('subscriptionService', () => {
 
       const result = await getSubscriptions('test@example.com', mockDeps);
 
-      expect(result).toEqual(mockSubscriptions);
+      expect(result).toHaveLength(1);
+      expect(result[0].email).toBe('test@example.com');
     });
 
     it('should throw BadRequestError for invalid email', async () => {

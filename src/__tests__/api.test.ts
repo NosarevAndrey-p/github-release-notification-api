@@ -20,7 +20,10 @@ describe('API Routes', () => {
     getSubscriptionsByEmail: jest.fn(),
   } as any;
 
-  const mockGithubRequest = jest.fn() as any;
+  const mockGithubService = {
+    fetchRepository: jest.fn(),
+    fetchLatestRelease: jest.fn(),
+  } as any;
 
   const mockEmailService = {
     sendConfirmationEmail: jest.fn(),
@@ -31,8 +34,9 @@ describe('API Routes', () => {
   };
 
   const mockDeps = {
-    db: mockDb,
-    githubRequest: mockGithubRequest,
+    repoStore: mockDb,
+    subStore: mockDb,
+    githubService: mockGithubService,
     emailService: mockEmailService,
     crypto: mockCrypto,
   };
@@ -46,11 +50,8 @@ describe('API Routes', () => {
 
   describe('POST /api/subscribe', () => {
     it('should return 200 on successful subscription', async () => {
-      mockGithubRequest.mockResolvedValue({
-        ok: true,
-        status: 200,
-        json: () => Promise.resolve({ id: 123, full_name: 'owner/repo' })
-      });
+      mockGithubService.fetchRepository.mockResolvedValue({ id: 123, full_name: 'owner/repo' });
+      mockGithubService.fetchLatestRelease.mockResolvedValue({ tag_name: 'v1.0' });
       mockDb.getRepositoryByFullName.mockResolvedValue(null);
       mockDb.createRepository.mockResolvedValue({ id: 1, full_name: 'owner/repo', last_seen_tag: null });
       mockDb.getSubscriptionByEmailAndRepoId.mockResolvedValue(null);
@@ -84,7 +85,8 @@ describe('API Routes', () => {
     });
 
     it('should return 404 for non-existent repo', async () => {
-      mockGithubRequest.mockResolvedValue({ status: 404, ok: false });
+      const { NotFoundError } = await import('../types/errors.js');
+      mockGithubService.fetchRepository.mockRejectedValue(new NotFoundError('repository not found'));
 
       const response = await request(app)
         .post('/api/subscribe')
@@ -95,11 +97,7 @@ describe('API Routes', () => {
     });
 
     it('should return 409 for duplicate confirmed subscription', async () => {
-      mockGithubRequest.mockResolvedValue({
-        ok: true,
-        status: 200,
-        json: () => Promise.resolve({ id: 123, full_name: 'owner/repo' })
-      });
+      mockGithubService.fetchRepository.mockResolvedValue({ id: 123, full_name: 'owner/repo' });
       mockDb.getRepositoryByFullName.mockResolvedValue({ id: 1, full_name: 'owner/repo', last_seen_tag: null });
       mockDb.getSubscriptionByEmailAndRepoId.mockResolvedValue({ id: 1, confirmed: 1 });
 
@@ -112,11 +110,7 @@ describe('API Routes', () => {
     });
 
     it('should return 200 and resend email for unconfirmed subscription', async () => {
-      mockGithubRequest.mockResolvedValue({
-        ok: true,
-        status: 200,
-        json: () => Promise.resolve({ id: 123, full_name: 'owner/repo' })
-      });
+      mockGithubService.fetchRepository.mockResolvedValue({ id: 123, full_name: 'owner/repo' });
       mockDb.getRepositoryByFullName.mockResolvedValue({ id: 1, full_name: 'owner/repo', last_seen_tag: null });
       mockDb.getSubscriptionByEmailAndRepoId.mockResolvedValue({
         id: 1,

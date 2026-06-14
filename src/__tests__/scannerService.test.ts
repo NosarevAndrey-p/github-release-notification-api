@@ -4,7 +4,7 @@ import { RateLimitError } from '../types/errors.js';
 
 describe('scannerService', () => {
   let mockDb: any;
-  let mockGithubRequest: any;
+  let mockGithubService: any;
   let mockEmailService: any;
 
   beforeEach(() => {
@@ -13,7 +13,9 @@ describe('scannerService', () => {
       getConfirmedSubscriptionsByRepoId: jest.fn(),
       updateRepositoryLastSeenTag: jest.fn(),
     };
-    mockGithubRequest = jest.fn();
+    mockGithubService = {
+      fetchLatestRelease: jest.fn(),
+    };
     mockEmailService = {
       sendNotificationEmail: jest.fn(),
     };
@@ -29,17 +31,16 @@ describe('scannerService', () => {
     mockDb.getConfirmedRepositories.mockResolvedValue([
       { id: 1, full_name: 'owner/repo', last_seen_tag: 'v1.0' },
     ]);
-    mockGithubRequest.mockResolvedValue({
-      ok: true,
-      status: 200,
-      json: () => Promise.resolve({ tag_name: 'v1.1', html_url: 'https://github.com/owner/repo/releases/tag/v1.1' }),
+    mockGithubService.fetchLatestRelease.mockResolvedValue({ 
+      tag_name: 'v1.1', 
+      html_url: 'https://github.com/owner/repo/releases/tag/v1.1' 
     });
     mockDb.getConfirmedSubscriptionsByRepoId.mockResolvedValue([
       { email: 'user1@example.com', unsubscribe_token: 'token1' },
       { email: 'user2@example.com', unsubscribe_token: 'token2' },
     ]);
 
-    await scan({ db: mockDb, githubRequest: mockGithubRequest, emailService: mockEmailService });
+    await scan({ repoStore: mockDb, subStore: mockDb, githubService: mockGithubService, emailService: mockEmailService });
 
     expect(mockEmailService.sendNotificationEmail).toHaveBeenCalledTimes(2);
     expect(mockEmailService.sendNotificationEmail).toHaveBeenCalledWith(
@@ -55,13 +56,9 @@ describe('scannerService', () => {
     mockDb.getConfirmedRepositories.mockResolvedValue([
       { id: 1, full_name: 'owner/repo', last_seen_tag: 'v1.0' },
     ]);
-    mockGithubRequest.mockResolvedValue({
-      ok: true,
-      status: 200,
-      json: () => Promise.resolve({ tag_name: 'v1.0' }),
-    });
+    mockGithubService.fetchLatestRelease.mockResolvedValue({ tag_name: 'v1.0' });
 
-    await scan({ db: mockDb, githubRequest: mockGithubRequest, emailService: mockEmailService });
+    await scan({ repoStore: mockDb, subStore: mockDb, githubService: mockGithubService, emailService: mockEmailService });
 
     expect(mockEmailService.sendNotificationEmail).not.toHaveBeenCalled();
     expect(mockDb.updateRepositoryLastSeenTag).not.toHaveBeenCalled();
@@ -71,9 +68,9 @@ describe('scannerService', () => {
     mockDb.getConfirmedRepositories.mockResolvedValue([
       { id: 1, full_name: 'owner/repo', last_seen_tag: 'v1.0' },
     ]);
-    mockGithubRequest.mockRejectedValue(new RateLimitError('github rate limit exceeded'));
+    mockGithubService.fetchLatestRelease.mockRejectedValue(new RateLimitError('github rate limit exceeded'));
 
-    await scan({ db: mockDb, githubRequest: mockGithubRequest, emailService: mockEmailService });
+    await scan({ repoStore: mockDb, subStore: mockDb, githubService: mockGithubService, emailService: mockEmailService });
 
     expect(console.warn).toHaveBeenCalledWith('Rate limit hit, stopping scan early');
     expect(mockEmailService.sendNotificationEmail).not.toHaveBeenCalled();
@@ -83,17 +80,13 @@ describe('scannerService', () => {
     mockDb.getConfirmedRepositories.mockResolvedValue([
       { id: 1, full_name: 'owner/repo', last_seen_tag: 'v1.0' },
     ]);
-    mockGithubRequest.mockResolvedValue({
-      ok: true,
-      status: 200,
-      json: () => Promise.resolve({ tag_name: 'v1.1' }),
-    });
+    mockGithubService.fetchLatestRelease.mockResolvedValue({ tag_name: 'v1.1' });
     mockDb.getConfirmedSubscriptionsByRepoId.mockResolvedValue([
       { email: 'user1@example.com', unsubscribe_token: 'token1' },
     ]);
     mockEmailService.sendNotificationEmail.mockRejectedValue(new Error('Email failed'));
 
-    await scan({ db: mockDb, githubRequest: mockGithubRequest, emailService: mockEmailService });
+    await scan({ repoStore: mockDb, subStore: mockDb, githubService: mockGithubService, emailService: mockEmailService });
 
     expect(mockEmailService.sendNotificationEmail).toHaveBeenCalled();
     expect(mockDb.updateRepositoryLastSeenTag).toHaveBeenCalledWith(1, 'v1.1');

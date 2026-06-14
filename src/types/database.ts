@@ -26,10 +26,15 @@ export interface DatabaseResult {
   rows?: unknown[];
 }
 
-export interface IDatabaseClient {
-  initSchema(): Promise<void> | void;
+export interface IRepositoryStore {
   getRepositoryByFullName(fullName: string): Promise<Repository | null>;
   createRepository(fullName: string, lastSeenTag: string | null): Promise<Repository>;
+  getConfirmedRepositories(): Promise<Repository[]>;
+  updateRepositoryLastSeenTag(repoId: number, lastSeenTag: string | null): Promise<DatabaseResult>;
+  deleteRepositoryById(id: number): Promise<DatabaseResult>;
+}
+
+export interface ISubscriptionStore {
   getSubscriptionByEmailAndRepoId(email: string, repoId: number): Promise<Subscription | null>;
   createSubscription(
     email: string,
@@ -42,9 +47,10 @@ export interface IDatabaseClient {
   getSubscriptionByUnsubscribeToken(token: string): Promise<Subscription | null>;
   deleteSubscriptionById(id: number): Promise<DatabaseResult>;
   countSubscriptionsByRepoId(repoId: number): Promise<number>;
-  deleteRepositoryById(id: number): Promise<DatabaseResult>;
   getSubscriptionsByEmail(email: string): Promise<UserSubscription[]>;
-  getConfirmedRepositories(): Promise<Repository[]>;
   getConfirmedSubscriptionsByRepoId(repoId: number): Promise<Subscription[]>;
-  updateRepositoryLastSeenTag(repoId: number, lastSeenTag: string | null): Promise<DatabaseResult>;
+}
+
+export interface IDatabaseClient extends IRepositoryStore, ISubscriptionStore {
+  initSchema(): Promise<void> | void;
 }

@@ -6,13 +6,14 @@ import {
   getSubscriptions,
 } from '../services/subscriptionService.js';
 import { AppError } from '../types/errors.js';
-import { IDatabaseClient } from '../types/database.js';
+import { IRepositoryStore, ISubscriptionStore } from '../types/database.js';
 import { IEmailService } from '../types/email.js';
-import { GithubRequest } from '../types/github.js';
+import { IGitHubService } from '../types/github.js';
 
 interface ApiDeps {
-  db: IDatabaseClient;
-  githubRequest: GithubRequest;
+  repoStore: IRepositoryStore;
+  subStore: ISubscriptionStore;
+  githubService: IGitHubService;
   emailService: IEmailService;
   crypto: {
     randomUUID: () => string;
@@ -77,4 +78,3 @@ function createApiRouter(deps: ApiDeps) {
 }
 
 export default createApiRouter;
-

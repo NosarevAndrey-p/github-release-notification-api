@@ -1,7 +1,7 @@
 import app from './src/app.js';
 import { scan } from './src/services/scannerService.js';
 import db from './src/db/database.js';
-import { githubRequest } from './src/services/githubService.js';
+import githubService from './src/services/githubService.js';
 import emailService from './src/services/emailService.js';
 import 'dotenv/config';
 
@@ -13,6 +13,13 @@ await db.initSchema();
 app.listen(port, () => {
   console.info(`Server running on port ${port}`);
 
-  scan({ db, githubRequest, emailService });
-  setInterval(() =>  scan({ db, githubRequest, emailService }), scanIntervalMs);
+  const scannerDeps = { 
+    repoStore: db, 
+    subStore: db, 
+    githubService, 
+    emailService 
+  };
+
+  scan(scannerDeps);
+  setInterval(() => scan(scannerDeps), scanIntervalMs);
 });

@@ -1,4 +1,9 @@
-import { GithubRequest, GithubDeps, GithubRepoInfo, GithubReleaseInfo } from '../types/github.js';
+import { 
+  GithubRequest, 
+  IGitHubService, 
+  GithubRepoInfo, 
+  GithubReleaseInfo 
+} from '../types/github.js';
 import { NotFoundError, RateLimitError, ServiceError } from '../types/errors.js';
 
 const GITHUB_API = new URL(process.env.GITHUB_API_URL || 'https://api.github.com');
@@ -30,27 +35,33 @@ export const githubRequest: GithubRequest = async (path: string) => {
   return res;
 };
 
-export async function fetchRepository(repo: string, { githubRequest }: GithubDeps): Promise<GithubRepoInfo> {
-  const res = await githubRequest(`/repos/${repo}`);
+export class GitHubService implements IGitHubService {
+  constructor(private request: GithubRequest) {}
 
-  if (res.status === 404) {
-    throw new NotFoundError('repository not found');
+  async fetchRepository(repo: string): Promise<GithubRepoInfo> {
+    const res = await this.request(`/repos/${repo}`);
+
+    if (res.status === 404) {
+      throw new NotFoundError('repository not found');
+    }
+
+    return await res.json() as GithubRepoInfo;
   }
 
-  return await res.json() as GithubRepoInfo;
-}
+  async fetchLatestRelease(repo: string): Promise<GithubReleaseInfo | null> {
+    const res = await this.request(`/repos/${repo}/releases/latest`);
 
-export async function fetchLatestRelease(repo: string, { githubRequest }: GithubDeps): Promise<GithubReleaseInfo | null> {
-  const res = await githubRequest(`/repos/${repo}/releases/latest`);
+    if (res.status === 200) {
+      return await res.json() as GithubReleaseInfo;
+    }
 
-  if (res.status === 200) {
-    return await res.json() as GithubReleaseInfo;
-  }
+    if (res.status === 404) {
+      return null;
+    }
 
-  if (res.status === 404) {
     return null;
   }
-
-  return null;
 }
 
+const defaultGitHubService = new GitHubService(githubRequest);
+export default defaultGitHubService;
