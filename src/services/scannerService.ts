@@ -1,11 +1,11 @@
-import DatabaseClient from '../db/databaseClient.js';
+import { IDatabaseClient } from '../db/databaseClient.js';
 import { IEmailService } from '../types/emailService.js';
 import { fetchLatestRelease } from './githubService.js';
 import { GithubRequest } from '../types/github.js';
 import { RateLimitError } from '../types/errors.js';
 
 interface ScannerDeps {
-  db: DatabaseClient;
+  db: IDatabaseClient;
   githubRequest: GithubRequest;
   emailService: IEmailService;
 }
@@ -17,7 +17,7 @@ export async function scan({ db, githubRequest, emailService }: ScannerDeps) {
   for (const repo of repos) {
     try {
       const release = await fetchLatestRelease(repo.full_name, { githubRequest });
-      
+
       if (!release) {
         continue;
       }
@@ -52,3 +52,4 @@ export async function scan({ db, githubRequest, emailService }: ScannerDeps) {
     }
   }
 }
+

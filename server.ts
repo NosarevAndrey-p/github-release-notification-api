@@ -1,7 +1,7 @@
 import app from './src/app.js';
 import { scan } from './src/services/scannerService.js';
 import db from './src/db/database.js';
-import { githubRequest } from './src/lib/github.js';
+import { githubRequest } from './src/services/githubService.js';
 import emailService from './src/services/emailService.js';
 import 'dotenv/config';
 

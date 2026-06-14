@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import pg from 'pg';
-import DatabaseClient, { Repository, Subscription, UserSubscription, DatabaseResult } from './databaseClient.js';
+import { IDatabaseClient, Repository, Subscription, UserSubscription, DatabaseResult } from './databaseClient.js';
 import { queries } from './sqlQueries.js';
 
 const { Pool } = pg;
@@ -11,11 +11,10 @@ function translatePlaceholders(sql: string): string {
   return sql.replace(/\?/g, () => `$${++index}`);
 }
 
-export default class PostgresDatabase extends DatabaseClient {
+export default class PostgresDatabase implements IDatabaseClient {
   private pool: pg.Pool;
 
   constructor() {
-    super();
     const connectionString = process.env.DATABASE_URL;
     if (!connectionString) {
       throw new Error('DATABASE_URL must be defined for Postgres');

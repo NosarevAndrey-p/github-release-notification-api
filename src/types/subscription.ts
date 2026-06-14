@@ -1,5 +1,4 @@
-import { UserSubscription } from './database.js';
-import DatabaseClient from '../db/databaseClient.js';
+import { UserSubscription, IDatabaseClient } from '../db/databaseClient.js';
 import { IEmailService } from './emailService.js';
 import { GithubRequest } from './github.js';
 
@@ -8,7 +7,7 @@ export interface UUIDProvider {
 }
 
 export interface SubscriptionDeps {
-  db: DatabaseClient;
+  db: IDatabaseClient;
   githubRequest: GithubRequest;
   emailService: IEmailService;
   crypto: UUIDProvider;

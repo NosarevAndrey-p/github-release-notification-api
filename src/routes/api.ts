@@ -6,12 +6,12 @@ import {
   getSubscriptions,
 } from '../services/subscriptionService.js';
 import { AppError } from '../types/errors.js';
-import DatabaseClient from '../db/databaseClient.js';
+import { IDatabaseClient } from '../db/databaseClient.js';
 import { IEmailService } from '../types/emailService.js';
 import { GithubRequest } from '../types/github.js';
 
 interface ApiDeps {
-  db: DatabaseClient;
+  db: IDatabaseClient;
   githubRequest: GithubRequest;
   emailService: IEmailService;
   crypto: {
