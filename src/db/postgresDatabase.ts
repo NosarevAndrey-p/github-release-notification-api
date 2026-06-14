@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import pg from 'pg';
-import { IDatabaseClient, Repository, Subscription, UserSubscription, DatabaseResult } from './databaseClient.js';
+import { IDatabaseClient, Repository, Subscription, UserSubscription, DatabaseResult } from '../types/database.js';
 import { queries } from './sqlQueries.js';
 
 const { Pool } = pg;

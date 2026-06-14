@@ -1,5 +1,5 @@
-import { UserSubscription, IDatabaseClient } from '../db/databaseClient.js';
-import { IEmailService } from './emailService.js';
+import { UserSubscription, IDatabaseClient } from './database.js';
+import { IEmailService } from './email.js';
 import { GithubRequest } from './github.js';
 
 export interface UUIDProvider {
@@ -26,3 +26,4 @@ export default class Subscription {
     this.last_seen_tag = last_seen_tag;
   }
 }
+

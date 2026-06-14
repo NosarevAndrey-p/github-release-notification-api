@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import SqliteDatabase from './sqliteDatabase.js';
 import PostgresDatabase from './postgresDatabase.js';
-import { IDatabaseClient } from './databaseClient.js';
+import { IDatabaseClient } from '../types/database.js';
 
 const client = (process.env.DB_CLIENT || 'sqlite').toLowerCase();
 

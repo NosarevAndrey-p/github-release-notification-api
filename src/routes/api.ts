@@ -6,8 +6,8 @@ import {
   getSubscriptions,
 } from '../services/subscriptionService.js';
 import { AppError } from '../types/errors.js';
-import { IDatabaseClient } from '../db/databaseClient.js';
-import { IEmailService } from '../types/emailService.js';
+import { IDatabaseClient } from '../types/database.js';
+import { IEmailService } from '../types/email.js';
 import { GithubRequest } from '../types/github.js';
 
 interface ApiDeps {
@@ -77,3 +77,4 @@ function createApiRouter(deps: ApiDeps) {
 }
 
 export default createApiRouter;
+

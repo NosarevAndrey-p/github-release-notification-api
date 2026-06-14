@@ -3,7 +3,7 @@ import { fileURLToPath } from 'url';
 import nodemailer from 'nodemailer';
 import 'dotenv/config';
 import ejs from 'ejs';
-import { IEmailService, EmailDeps } from '../types/emailService.js';
+import { IEmailService, EmailDeps } from '../types/email.js';
 import { emailStyles as styles } from '../constants/emailStyles.js';
 
 const __filename = fileURLToPath(import.meta.url);

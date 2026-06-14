@@ -1,5 +1,5 @@
-import { IDatabaseClient } from '../db/databaseClient.js';
-import { IEmailService } from '../types/emailService.js';
+import { IDatabaseClient } from '../types/database.js';
+import { IEmailService } from '../types/email.js';
 import { fetchLatestRelease } from './githubService.js';
 import { GithubRequest } from '../types/github.js';
 import { RateLimitError } from '../types/errors.js';
@@ -52,4 +52,5 @@ export async function scan({ db, githubRequest, emailService }: ScannerDeps) {
     }
   }
 }
+
 

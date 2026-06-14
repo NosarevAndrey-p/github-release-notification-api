@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import Database from 'better-sqlite3';
-import { IDatabaseClient, Repository, Subscription, UserSubscription, DatabaseResult } from './databaseClient.js';
+import { IDatabaseClient, Repository, Subscription, UserSubscription, DatabaseResult } from '../types/database.js';
 import { queries } from './sqlQueries.js';
 
 export default class SqliteDatabase implements IDatabaseClient {
