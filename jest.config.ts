@@ -1,7 +1,6 @@
-import type { Config } from 'jest';
-
-const config: Config = {
-  preset: 'ts-jest',
+/** @type {import('ts-jest').JestConfigWithTsJest} */
+export default {
+  preset: 'ts-jest/presets/default-esm',
   testEnvironment: 'node',
   extensionsToTreatAsEsm: ['.ts'],
   moduleNameMapper: {
@@ -15,9 +14,5 @@ const config: Config = {
       },
     ],
   },
-  testMatch: ['**/__tests__/**/*.test.{js,ts}'],
-  collectCoverage: true,
-  coverageDirectory: 'coverage',
+  testPathIgnorePatterns: ['/node_modules/', '/dist/'],
 };
-
-export default config;
