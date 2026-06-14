@@ -1,11 +1,12 @@
 import { jest } from '@jest/globals';
-import { sendConfirmationEmail, sendNotificationEmail } from '../services/email/emailService.js';
+import { EmailService } from '../services/email/emailService.js';
 import { EmailDeps } from '../types/email.js';
 
 describe('EmailService', () => {
   let mockTransporter: any;
   let mockRenderer: any;
   let mockDeps: EmailDeps;
+  let emailService: EmailService;
 
   beforeEach(() => {
     mockTransporter = {
@@ -23,15 +24,16 @@ describe('EmailService', () => {
       transporter: mockTransporter,
       renderer: mockRenderer,
     };
+
+    emailService = new EmailService(mockDeps);
   });
 
   it('should send confirmation email', async () => {
-    await sendConfirmationEmail(
+    await emailService.sendConfirmationEmail(
       'test@example.com',
       'owner/repo',
       'confirm-token',
-      'unsub-token',
-      mockDeps
+      'unsub-token'
     );
 
     expect(mockRenderer.render).toHaveBeenCalledWith(
@@ -46,12 +48,11 @@ describe('EmailService', () => {
   });
 
   it('should send notification email', async () => {
-    await sendNotificationEmail(
+    await emailService.sendNotificationEmail(
       'test@example.com',
       'owner/repo',
       'v1.0',
-      'unsub-token',
-      mockDeps
+      'unsub-token'
     );
 
     expect(mockRenderer.render).toHaveBeenCalledWith(

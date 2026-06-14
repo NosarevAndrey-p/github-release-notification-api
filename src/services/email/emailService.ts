@@ -1,60 +1,53 @@
-import { config } from '../../config/index.js';
 import { IEmailService, EmailDeps } from '../../types/email.js';
 import { emailStyles as styles } from '../../constants/emailStyles.js';
-import { EjsTemplateRenderer } from './templateRenderer.js';
-import { NodemailerTransporter } from './emailTransporter.js';
 
-export async function sendConfirmationEmail(
-  email: string,
-  repo: string,
-  confirmToken: string,
-  unsubscribeToken: string,
-  { renderer, transporter, baseUrl }: EmailDeps
-): Promise<void> {
-  const confirmUrl = `${baseUrl}/api/confirm/${confirmToken}`;
-  const unsubscribeUrl = `${baseUrl}/api/unsubscribe/${unsubscribeToken}`;
+export class EmailService implements IEmailService {
+  private renderer;
+  private transporter;
+  private baseUrl;
 
-  const html = await renderer.render('confirmation-email', {
-    repo,
-    confirmUrl,
-    unsubscribeUrl,
-    styles,
-  });
+  constructor({ renderer, transporter, baseUrl }: EmailDeps) {
+    this.renderer = renderer;
+    this.transporter = transporter;
+    this.baseUrl = baseUrl;
+  }
 
-  await transporter.send(email, `Confirm subscription to ${repo}`, html);
+  async sendConfirmationEmail(
+    email: string,
+    repo: string,
+    confirmToken: string,
+    unsubscribeToken: string
+  ): Promise<void> {
+    const confirmUrl = `${this.baseUrl}/api/confirm/${confirmToken}`;
+    const unsubscribeUrl = `${this.baseUrl}/api/unsubscribe/${unsubscribeToken}`;
+
+    const html = await this.renderer.render('confirmation-email', {
+      repo,
+      confirmUrl,
+      unsubscribeUrl,
+      styles,
+    });
+
+    await this.transporter.send(email, `Confirm subscription to ${repo}`, html);
+  }
+
+  async sendNotificationEmail(
+    email: string,
+    repo: string,
+    tagName: string,
+    unsubscribeToken: string
+  ): Promise<void> {
+    const unsubscribeUrl = `${this.baseUrl}/api/unsubscribe/${unsubscribeToken}`;
+    const releaseUrl = `https://github.com/${repo}/releases/tag/${tagName}`;
+
+    const html = await this.renderer.render('notification-email', {
+      repo,
+      newTag: tagName,
+      releaseUrl,
+      unsubscribeUrl,
+      styles,
+    });
+
+    await this.transporter.send(email, `New release ${tagName} for ${repo}`, html);
+  }
 }
-
-export async function sendNotificationEmail(
-  email: string,
-  repo: string,
-  newTag: string,
-  unsubscribeToken: string,
-  { renderer, transporter, baseUrl }: EmailDeps
-): Promise<void> {
-  const unsubscribeUrl = `${baseUrl}/api/unsubscribe/${unsubscribeToken}`;
-  const releaseUrl = `https://github.com/${repo}/releases/tag/${newTag}`;
-
-  const html = await renderer.render('notification-email', {
-    repo,
-    newTag,
-    releaseUrl,
-    unsubscribeUrl,
-    styles,
-  });
-
-  await transporter.send(email, `New release ${newTag} for ${repo}`, html);
-}
-
-// Configuration for the default instance
-const renderer = new EjsTemplateRenderer();
-const transporter = new NodemailerTransporter(config.smtp);
-const baseUrl = config.app.baseUrl;
-
-const emailService: IEmailService = {
-  sendConfirmationEmail: (email, repo, cToken, uToken) => 
-    sendConfirmationEmail(email, repo, cToken, uToken, { renderer, transporter, baseUrl }),
-  sendNotificationEmail: (email, repo, tag, uToken) => 
-    sendNotificationEmail(email, repo, tag, uToken, { renderer, transporter, baseUrl }),
-};
-
-export default emailService;

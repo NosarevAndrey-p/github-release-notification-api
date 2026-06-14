@@ -1,26 +1,32 @@
 import express, { json, urlencoded } from 'express';
 import crypto from 'crypto';
-import db from './db/database.js';
-import emailService from './services/email/emailService.js';
-import githubService from './services/githubService.js';
 import createApiRouter from './routes/api.js';
 import { errorMiddleware } from './middleware/errorMiddleware.js';
+import { IRepositoryStore, ISubscriptionStore } from './types/database.js';
+import { IEmailService } from './types/email.js';
+import { IGitHubService } from './types/github.js';
 
-const app = express();
+interface AppDeps {
+  repoStore: IRepositoryStore;
+  subStore: ISubscriptionStore;
+  githubService: IGitHubService;
+  emailService: IEmailService;
+}
 
-app.use(json());
-app.use(urlencoded({ extended: true }));
+export function createApp(deps: AppDeps) {
+  const app = express();
 
-app.use('/api',
-  createApiRouter({ 
-    repoStore: db, 
-    subStore: db, 
-    githubService, 
-    emailService, 
-    crypto 
-  })
-);
+  app.use(json());
+  app.use(urlencoded({ extended: true }));
 
-app.use(errorMiddleware);
+  app.use('/api',
+    createApiRouter({ 
+      ...deps,
+      crypto 
+    })
+  );
 
-export default app;
+  app.use(errorMiddleware);
+
+  return app;
+}

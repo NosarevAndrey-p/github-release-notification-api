@@ -3,7 +3,7 @@ import {
   NotFoundError, 
   ConflictError, 
 } from '../types/errors.js';
-import { ValidatorService as validate } from './validatorService.js';
+import { ValidatorService } from './validatorService.js';
 
 async function getOrCreateRepository(repo: string, { repoStore, githubService }: SubscriptionDeps) {
   await githubService.fetchRepository(repo);
@@ -17,8 +17,8 @@ async function getOrCreateRepository(repo: string, { repoStore, githubService }:
 }
 
 export async function subscribeToRepo({ email, repo }: { email?: string; repo?: string }, deps: SubscriptionDeps) {
-  validate.validateEmail(email);
-  validate.validateRepo(repo);
+  ValidatorService.validateEmail(email);
+  ValidatorService.validateRepo(repo);
 
   const repoRow = await getOrCreateRepository(repo, deps);
 
@@ -42,7 +42,7 @@ export async function subscribeToRepo({ email, repo }: { email?: string; repo?: 
 }
 
 export async function confirmSubscription(token: string | undefined, { subStore }: SubscriptionDeps) {
-  validate.validateToken(token);
+  ValidatorService.validateToken(token);
 
   const sub = await subStore.getSubscriptionByConfirmToken(token);
   if (!sub) {
@@ -58,7 +58,7 @@ export async function confirmSubscription(token: string | undefined, { subStore 
 }
 
 export async function unsubscribeFromRepo(token: string | undefined, { subStore, repoStore }: SubscriptionDeps) {
-  validate.validateToken(token);
+  ValidatorService.validateToken(token);
 
   const sub = await subStore.getSubscriptionByUnsubscribeToken(token);
   if (!sub) {
@@ -77,7 +77,7 @@ export async function unsubscribeFromRepo(token: string | undefined, { subStore,
 }
 
 export async function getSubscriptions(email: string | undefined, { subStore }: SubscriptionDeps) {
-  validate.validateEmail(email);
+  ValidatorService.validateEmail(email);
 
   const rows = await subStore.getSubscriptionsByEmail(email);
   return rows.map(row => new SubscriptionModel(row));
