@@ -2,14 +2,9 @@ import fs from 'fs';
 import path from 'path';
 import pg from 'pg';
 import { IDatabaseClient, Repository, Subscription, UserSubscription, DatabaseResult } from '../types/database.js';
-import { queries } from './sqlQueries.js';
+import { postgresQueries as queries } from './sqlQueries.js';
 
 const { Pool } = pg;
-
-function translatePlaceholders(sql: string): string {
-  let index = 0;
-  return sql.replace(/\?/g, () => `$${++index}`);
-}
 
 export default class PostgresDatabase implements IDatabaseClient {
   private pool: pg.Pool;
@@ -30,22 +25,21 @@ export default class PostgresDatabase implements IDatabaseClient {
     await this.pool.query(schema);
   }
 
-  async query(sql: string, params: unknown[] = []): Promise<pg.QueryResult> {
-    const text = translatePlaceholders(sql);
-    return this.pool.query(text, params);
+  private async query(sql: string, params: unknown[] = []): Promise<pg.QueryResult> {
+    return this.pool.query(sql, params);
   }
 
-  async get<T>(sql: string, params: unknown[] = []): Promise<T | null> {
+  private async get<T>(sql: string, params: unknown[] = []): Promise<T | null> {
     const result = await this.query(sql, params);
     return (result.rows[0] as T) || null;
   }
 
-  async all<T>(sql: string, params: unknown[] = []): Promise<T[]> {
+  private async all<T>(sql: string, params: unknown[] = []): Promise<T[]> {
     const result = await this.query(sql, params);
     return result.rows as T[];
   }
 
-  async run(sql: string, params: unknown[] = []): Promise<DatabaseResult> {
+  private async run(sql: string, params: unknown[] = []): Promise<DatabaseResult> {
     const result = await this.query(sql, params);
     return {
       rowCount: result.rowCount,
@@ -58,7 +52,7 @@ export default class PostgresDatabase implements IDatabaseClient {
   }
 
   async createRepository(fullName: string, lastSeenTag: string | null): Promise<Repository> {
-    const result = await this.query(`${queries.insertRepository} RETURNING id`, [fullName, lastSeenTag]);
+    const result = await this.query(queries.insertRepository, [fullName, lastSeenTag]);
     return {
       id: result.rows[0].id,
       full_name: fullName,
@@ -70,8 +64,16 @@ export default class PostgresDatabase implements IDatabaseClient {
     return this.get<Subscription>(queries.getSubscriptionByEmailAndRepoId, [email, repoId]);
   }
 
-  async createSubscription(email: string, repoId: number, confirmToken: string, unsubscribeToken: string): Promise<DatabaseResult> {
-    return this.run(queries.insertSubscription, [email, repoId, confirmToken, unsubscribeToken]);
+  async createSubscription(email: string, repoId: number, confirmToken: string, unsubscribeToken: string): Promise<Subscription> {
+    const result = await this.query(queries.insertSubscription, [email, repoId, confirmToken, unsubscribeToken]);
+    return {
+      id: result.rows[0].id,
+      email,
+      repo_id: repoId,
+      confirmed: 0,
+      confirm_token: confirmToken,
+      unsubscribe_token: unsubscribeToken,
+    };
   }
 
   async getSubscriptionByConfirmToken(token: string): Promise<Subscription | null> {

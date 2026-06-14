@@ -18,8 +18,9 @@ describe('scannerService', () => {
       fetchLatestRelease: jest.fn(),
     };
     mockNotifier = {
-      notify: jest.fn().mockResolvedValue(undefined),
+      notify: jest.fn() as any,
     };
+    mockNotifier.notify.mockResolvedValue(undefined);
     deps = {
       repoStore: mockDb,
       subStore: mockDb,

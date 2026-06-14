@@ -1,5 +1,5 @@
 import { jest } from '@jest/globals';
-import { sendConfirmationEmail, sendNotificationEmail } from '../services/emailService.js';
+import { sendConfirmationEmail, sendNotificationEmail } from '../services/email/emailService.js';
 import { EmailDeps } from '../types/email.js';
 
 describe('EmailService', () => {
@@ -9,11 +9,15 @@ describe('EmailService', () => {
 
   beforeEach(() => {
     mockTransporter = {
-      send: jest.fn().mockResolvedValue(undefined),
+      send: jest.fn() as any,
     };
+    mockTransporter.send.mockResolvedValue(undefined);
+    
     mockRenderer = {
-      render: jest.fn().mockResolvedValue('<html>Test Template</html>'),
+      render: jest.fn() as any,
     };
+    mockRenderer.render.mockResolvedValue('<html>Test Template</html>');
+
     mockDeps = {
       baseUrl: 'http://localhost:3000',
       transporter: mockTransporter,

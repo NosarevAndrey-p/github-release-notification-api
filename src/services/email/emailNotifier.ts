@@ -1,6 +1,6 @@
-import { INotifier } from '../types/notification.js';
-import { IEmailService } from '../types/email.js';
-import { Subscription } from '../types/database.js';
+import { INotifier } from '../../types/notification.js';
+import { IEmailService } from '../../types/email.js';
+import { Subscription } from '../../types/database.js';
 
 export class EmailNotifier implements INotifier {
   constructor(private emailService: IEmailService) {}

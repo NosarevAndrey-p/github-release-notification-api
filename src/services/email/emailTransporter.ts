@@ -1,5 +1,5 @@
 import nodemailer from 'nodemailer';
-import { IEmailTransporter } from '../types/email.js';
+import { IEmailTransporter } from '../../types/email.js';
 
 export class NodemailerTransporter implements IEmailTransporter {
   private transporter: nodemailer.Transporter;

@@ -1,3 +1,20 @@
+export interface IQueries {
+  getRepositoryByFullName: string;
+  insertRepository: string;
+  getSubscriptionByEmailAndRepoId: string;
+  insertSubscription: string;
+  getSubscriptionByConfirmToken: string;
+  updateSubscriptionConfirmed: string;
+  getSubscriptionByUnsubscribeToken: string;
+  deleteSubscriptionById: string;
+  countSubscriptionsByRepoId: string;
+  deleteRepositoryById: string;
+  getSubscriptionsByEmail: string;
+  getConfirmedRepositories: string;
+  getConfirmedSubscriptionsByRepoId: string;
+  updateRepositoryLastSeenTag: string;
+}
+
 export interface Repository {
   id: number;
   full_name: string;
@@ -41,7 +58,7 @@ export interface ISubscriptionStore {
     repoId: number,
     confirmToken: string,
     unsubscribeToken: string
-  ): Promise<DatabaseResult>;
+  ): Promise<Subscription>;
   getSubscriptionByConfirmToken(token: string): Promise<Subscription | null>;
   updateSubscriptionConfirmed(id: number): Promise<DatabaseResult>;
   getSubscriptionByUnsubscribeToken(token: string): Promise<Subscription | null>;

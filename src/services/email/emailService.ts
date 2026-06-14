@@ -1,6 +1,6 @@
 import 'dotenv/config';
-import { IEmailService, EmailDeps } from '../types/email.js';
-import { emailStyles as styles } from '../constants/emailStyles.js';
+import { IEmailService, EmailDeps } from '../../types/email.js';
+import { emailStyles as styles } from '../../constants/emailStyles.js';
 import { EjsTemplateRenderer } from './templateRenderer.js';
 import { NodemailerTransporter } from './emailTransporter.js';
 

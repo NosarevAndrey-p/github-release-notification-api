@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import Database from 'better-sqlite3';
 import { IDatabaseClient, Repository, Subscription, UserSubscription, DatabaseResult } from '../types/database.js';
-import { queries } from './sqlQueries.js';
+import { sqliteQueries as queries } from './sqlQueries.js';
 
 export default class SqliteDatabase implements IDatabaseClient {
   private db: Database.Database;
@@ -18,15 +18,15 @@ export default class SqliteDatabase implements IDatabaseClient {
     this.db.exec(schema);
   }
 
-  get<T>(sql: string, params: unknown[] = []): T | null {
+  private get<T>(sql: string, params: unknown[] = []): T | null {
     return (this.db.prepare(sql).get(...params) as T) || null;
   }
 
-  all<T>(sql: string, params: unknown[] = []): T[] {
+  private all<T>(sql: string, params: unknown[] = []): T[] {
     return this.db.prepare(sql).all(...params) as T[];
   }
 
-  run(sql: string, params: unknown[] = []): DatabaseResult {
+  private run(sql: string, params: unknown[] = []): DatabaseResult {
     const result = this.db.prepare(sql).run(...params);
     return {
       lastInsertRowid: result.lastInsertRowid,
@@ -51,8 +51,16 @@ export default class SqliteDatabase implements IDatabaseClient {
     return this.get<Subscription>(queries.getSubscriptionByEmailAndRepoId, [email, repoId]);
   }
 
-  async createSubscription(email: string, repoId: number, confirmToken: string, unsubscribeToken: string): Promise<DatabaseResult> {
-    return this.run(queries.insertSubscription, [email, repoId, confirmToken, unsubscribeToken]);
+  async createSubscription(email: string, repoId: number, confirmToken: string, unsubscribeToken: string): Promise<Subscription> {
+    const result = this.run(queries.insertSubscription, [email, repoId, confirmToken, unsubscribeToken]);
+    return {
+      id: result.lastInsertRowid as number,
+      email,
+      repo_id: repoId,
+      confirmed: 0,
+      confirm_token: confirmToken,
+      unsubscribe_token: unsubscribeToken,
+    };
   }
 
   async getSubscriptionByConfirmToken(token: string): Promise<Subscription | null> {
