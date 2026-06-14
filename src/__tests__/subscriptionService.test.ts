@@ -12,6 +12,7 @@ describe('subscriptionService', () => {
   let mockGithubRequest: any;
   let mockEmailService: any;
   let mockCrypto: any;
+  let mockDeps: any;
 
   beforeEach(() => {
     mockDb = {
@@ -35,6 +36,13 @@ describe('subscriptionService', () => {
     mockCrypto = {
       randomUUID: jest.fn(),
     };
+
+    mockDeps = {
+      db: mockDb,
+      githubRequest: mockGithubRequest,
+      emailService: mockEmailService,
+      crypto: mockCrypto,
+    };
   });
 
   describe('subscribeToRepo', () => {
@@ -50,7 +58,7 @@ describe('subscriptionService', () => {
 
       const result = await subscribeToRepo(
         { email: 'test@example.com', repo: 'owner/repo' },
-        { db: mockDb, githubRequest: mockGithubRequest, emailService: mockEmailService, crypto: mockCrypto }
+        mockDeps
       );
 
       expect(result.message).toBe('subscription successful, confirmation email sent');
@@ -63,7 +71,7 @@ describe('subscriptionService', () => {
       await expect(
         subscribeToRepo(
           { email: '', repo: 'owner/repo' },
-          { db: mockDb, githubRequest: mockGithubRequest, emailService: mockEmailService, crypto: mockCrypto }
+          mockDeps
         )
       ).rejects.toThrow('email is required');
     });
@@ -72,7 +80,7 @@ describe('subscriptionService', () => {
       await expect(
         subscribeToRepo(
           { email: 'test@example.com', repo: 'invalid' },
-          { db: mockDb, githubRequest: mockGithubRequest, emailService: mockEmailService, crypto: mockCrypto }
+          mockDeps
         )
       ).rejects.toThrow('invalid repo format');
     });
@@ -83,7 +91,7 @@ describe('subscriptionService', () => {
       await expect(
         subscribeToRepo(
           { email: 'test@example.com', repo: 'owner/repo' },
-          { db: mockDb, githubRequest: mockGithubRequest, emailService: mockEmailService, crypto: mockCrypto }
+          mockDeps
         )
       ).rejects.toThrow('repository not found');
     });
@@ -94,7 +102,7 @@ describe('subscriptionService', () => {
       await expect(
         subscribeToRepo(
           { email: 'test@example.com', repo: 'owner/repo' },
-          { db: mockDb, githubRequest: mockGithubRequest, emailService: mockEmailService, crypto: mockCrypto }
+          mockDeps
         )
       ).rejects.toThrow('github rate limit exceeded');
     });
@@ -111,7 +119,7 @@ describe('subscriptionService', () => {
       await expect(
         subscribeToRepo(
           { email: 'test@example.com', repo: 'owner/repo' },
-          { db: mockDb, githubRequest: mockGithubRequest, emailService: mockEmailService, crypto: mockCrypto }
+          mockDeps
         )
       ).rejects.toThrow('email already subscribed to this repository');
     });
@@ -133,7 +141,7 @@ describe('subscriptionService', () => {
 
       const result = await subscribeToRepo(
         { email: 'test@example.com', repo: 'owner/repo' },
-        { db: mockDb, githubRequest: mockGithubRequest, emailService: mockEmailService, crypto: mockCrypto }
+        mockDeps
       );
 
       expect(result.message).toBe('confirmation email resent');
@@ -150,7 +158,7 @@ describe('subscriptionService', () => {
     it('should confirm subscription successfully', async () => {
       mockDb.getSubscriptionByConfirmToken.mockResolvedValue({ id: 1, confirmed: 0 });
 
-      const result = await confirmSubscription('12345678-1234-1234-1234-123456789012', { db: mockDb });
+      const result = await confirmSubscription('12345678-1234-1234-1234-123456789012', mockDeps);
 
       expect(result.message).toBe('subscription confirmed successfully');
       expect(mockDb.updateSubscriptionConfirmed).toHaveBeenCalledWith(1);
@@ -158,7 +166,7 @@ describe('subscriptionService', () => {
 
     it('should throw BadRequestError for invalid token', async () => {
       await expect(
-        confirmSubscription('', { db: mockDb })
+        confirmSubscription('', mockDeps)
       ).rejects.toThrow('token is required');
     });
 
@@ -166,14 +174,14 @@ describe('subscriptionService', () => {
       mockDb.getSubscriptionByConfirmToken.mockResolvedValue(null);
 
       await expect(
-        confirmSubscription('12345678-1234-1234-1234-123456789012', { db: mockDb })
+        confirmSubscription('12345678-1234-1234-1234-123456789012', mockDeps)
       ).rejects.toThrow('Token not found');
     });
 
     it('should return already confirmed message', async () => {
       mockDb.getSubscriptionByConfirmToken.mockResolvedValue({ id: 1, confirmed: 1 });
 
-      const result = await confirmSubscription('12345678-1234-1234-1234-123456789012', { db: mockDb });
+      const result = await confirmSubscription('12345678-1234-1234-1234-123456789012', mockDeps);
 
       expect(result.message).toBe('subscription already confirmed');
       expect(mockDb.updateSubscriptionConfirmed).not.toHaveBeenCalled();
@@ -185,7 +193,7 @@ describe('subscriptionService', () => {
       mockDb.getSubscriptionByUnsubscribeToken.mockResolvedValue({ id: 1, repo_id: 1 });
       mockDb.countSubscriptionsByRepoId.mockResolvedValue(0);
 
-      const result = await unsubscribeFromRepo('12345678-1234-1234-1234-123456789012', { db: mockDb });
+      const result = await unsubscribeFromRepo('12345678-1234-1234-1234-123456789012', mockDeps);
 
       expect(result.message).toBe('unsubscribed successfully');
       expect(mockDb.deleteSubscriptionById).toHaveBeenCalledWith(1);
@@ -194,7 +202,7 @@ describe('subscriptionService', () => {
 
     it('should throw BadRequestError for invalid token', async () => {
       await expect(
-        unsubscribeFromRepo('', { db: mockDb })
+        unsubscribeFromRepo('', mockDeps)
       ).rejects.toThrow('token is required');
     });
 
@@ -202,7 +210,7 @@ describe('subscriptionService', () => {
       mockDb.getSubscriptionByUnsubscribeToken.mockResolvedValue(null);
 
       await expect(
-        unsubscribeFromRepo('12345678-1234-1234-1234-123456789012', { db: mockDb })
+        unsubscribeFromRepo('12345678-1234-1234-1234-123456789012', mockDeps)
       ).rejects.toThrow('Token not found');
     });
   });
@@ -212,14 +220,14 @@ describe('subscriptionService', () => {
       const mockSubscriptions = [{ email: 'test@example.com', repo: 'owner/repo', confirmed: true }];
       mockDb.getSubscriptionsByEmail.mockResolvedValue(mockSubscriptions);
 
-      const result = await getSubscriptions('test@example.com', { db: mockDb });
+      const result = await getSubscriptions('test@example.com', mockDeps);
 
       expect(result).toEqual(mockSubscriptions);
     });
 
     it('should throw BadRequestError for invalid email', async () => {
       await expect(
-        getSubscriptions('', { db: mockDb })
+        getSubscriptions('', mockDeps)
       ).rejects.toThrow('email is required');
     });
   });
