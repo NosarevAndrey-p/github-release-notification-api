@@ -1,26 +1,9 @@
 import Subscription, { SubscriptionDeps } from '../types/subscription.js';
 import { 
-  BadRequestError, 
   NotFoundError, 
   ConflictError, 
 } from '../types/errors.js';
-
-const repoRegex = /^[^/]+\/[^/]+$/;
-const tokenRegex = /^[0-9a-f-]{36}$/i;
-
-function validateEmail(email: string | undefined): asserts email is string {
-  if (!email) throw new BadRequestError('email is required');
-}
-
-function validateRepo(repo: string | undefined): asserts repo is string {
-  if (!repo) throw new BadRequestError('repo is required');
-  if (!repoRegex.test(repo)) throw new BadRequestError('invalid repo format');
-}
-
-function validateToken(token: string | undefined): asserts token is string {
-  if (!token) throw new BadRequestError('token is required');
-  if (!tokenRegex.test(token)) throw new BadRequestError('invalid token');
-}
+import { ValidatorService as validate } from './validatorService.js';
 
 async function getOrCreateRepository(repo: string, { repoStore, githubService }: SubscriptionDeps) {
   await githubService.fetchRepository(repo);
@@ -34,8 +17,8 @@ async function getOrCreateRepository(repo: string, { repoStore, githubService }:
 }
 
 export async function subscribeToRepo({ email, repo }: { email?: string; repo?: string }, deps: SubscriptionDeps) {
-  validateEmail(email);
-  validateRepo(repo);
+  validate.validateEmail(email);
+  validate.validateRepo(repo);
 
   const repoRow = await getOrCreateRepository(repo, deps);
 
@@ -59,7 +42,7 @@ export async function subscribeToRepo({ email, repo }: { email?: string; repo?: 
 }
 
 export async function confirmSubscription(token: string | undefined, { subStore }: SubscriptionDeps) {
-  validateToken(token);
+  validate.validateToken(token);
 
   const sub = await subStore.getSubscriptionByConfirmToken(token);
   if (!sub) {
@@ -75,7 +58,7 @@ export async function confirmSubscription(token: string | undefined, { subStore 
 }
 
 export async function unsubscribeFromRepo(token: string | undefined, { subStore, repoStore }: SubscriptionDeps) {
-  validateToken(token);
+  validate.validateToken(token);
 
   const sub = await subStore.getSubscriptionByUnsubscribeToken(token);
   if (!sub) {
@@ -94,7 +77,7 @@ export async function unsubscribeFromRepo(token: string | undefined, { subStore,
 }
 
 export async function getSubscriptions(email: string | undefined, { subStore }: SubscriptionDeps) {
-  validateEmail(email);
+  validate.validateEmail(email);
 
   const rows = await subStore.getSubscriptionsByEmail(email);
   return rows.map(row => new Subscription(row));

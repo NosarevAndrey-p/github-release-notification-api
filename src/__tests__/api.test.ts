@@ -2,6 +2,7 @@ import request from 'supertest';
 import express, { Express } from 'express';
 import createApiRouter from '../routes/api.js';
 import { jest } from '@jest/globals';
+import { errorMiddleware } from '../middleware/errorMiddleware.js';
 
 describe('API Routes', () => {
   let app: Express;
@@ -46,6 +47,7 @@ describe('API Routes', () => {
     app = express();
     app.use(express.json());
     app.use('/api', createApiRouter(mockDeps as any));
+    app.use(errorMiddleware);
   });
 
   describe('POST /api/subscribe', () => {

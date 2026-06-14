@@ -4,6 +4,7 @@ import db from './db/database.js';
 import emailService from './services/emailService.js';
 import githubService from './services/githubService.js';
 import createApiRouter from './routes/api.js';
+import { errorMiddleware } from './middleware/errorMiddleware.js';
 
 const app = express();
 
@@ -19,5 +20,7 @@ app.use('/api',
     crypto 
   })
 );
+
+app.use(errorMiddleware);
 
 export default app;
