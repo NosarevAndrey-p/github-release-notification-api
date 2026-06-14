@@ -1,5 +1,6 @@
 import { jest } from '@jest/globals';
 import { scan } from '../services/scannerService.js';
+import { RateLimitError } from '../types/errors.js';
 
 describe('scannerService', () => {
   let mockDb: any;
@@ -70,7 +71,7 @@ describe('scannerService', () => {
     mockDb.getConfirmedRepositories.mockResolvedValue([
       { id: 1, full_name: 'owner/repo', last_seen_tag: 'v1.0' },
     ]);
-    mockGithubRequest.mockResolvedValue({ status: 403, ok: false });
+    mockGithubRequest.mockRejectedValue(new RateLimitError('github rate limit exceeded'));
 
     await scan({ db: mockDb, githubRequest: mockGithubRequest, emailService: mockEmailService });
 

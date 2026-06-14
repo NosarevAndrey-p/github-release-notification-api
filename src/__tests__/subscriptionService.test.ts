@@ -5,6 +5,7 @@ import {
   unsubscribeFromRepo,
   getSubscriptions,
 } from '../services/subscriptionService.js';
+import { RateLimitError } from '../types/errors.js';
 
 describe('subscriptionService', () => {
   let mockDb: any;
@@ -88,7 +89,7 @@ describe('subscriptionService', () => {
     });
 
     it('should throw RateLimitError for GitHub rate limit', async () => {
-      mockGithubRequest.mockResolvedValue({ status: 429, ok: false });
+      mockGithubRequest.mockRejectedValue(new RateLimitError('github rate limit exceeded'));
 
       await expect(
         subscribeToRepo(

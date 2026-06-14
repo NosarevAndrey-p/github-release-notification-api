@@ -1,3 +1,10 @@
+import nodemailer from 'nodemailer';
+
+export interface EmailDeps {
+  transporter: nodemailer.Transporter;
+  baseUrl: string;
+}
+
 export interface IEmailService {
   sendConfirmationEmail(
     email: string,
