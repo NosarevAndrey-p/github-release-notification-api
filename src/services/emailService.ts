@@ -3,6 +3,7 @@ import { fileURLToPath } from 'url';
 import nodemailer from 'nodemailer';
 import 'dotenv/config';
 import ejs from 'ejs';
+import { IEmailService } from '../types/emailService.js';
 
 const BASE_URL = process.env.BASE_URL || 'http://localhost:3000';
 const __filename = fileURLToPath(import.meta.url);
@@ -34,17 +35,17 @@ async function renderTemplate(templateName: string, data: Record<string, unknown
   return ejs.renderFile(templateFile, data);
 }
 
-class EmailService {
+class EmailServiceImpl implements IEmailService {
   constructor(private transporter: nodemailer.Transporter) {}
 
-  async sendConfirmationEmail(email: string, repo: string, confirmToken: string, unsubscribeToken: string) {
+  async sendConfirmationEmail(email: string, repo: string, confirmToken: string, unsubscribeToken: string): Promise<void> {
     const confirmUrl = `${BASE_URL}/api/confirm/${confirmToken}`;
     const unsubscribeUrl = `${BASE_URL}/api/unsubscribe/${unsubscribeToken}`;
 
     const html = await renderTemplate('confirmation-email',
       { repo, confirmUrl, unsubscribeUrl, styles,});
 
-    return this.transporter.sendMail({
+    await this.transporter.sendMail({
       from: process.env.SMTP_USER,
       to: email,
       subject: `Confirm subscription to ${repo}`,
@@ -52,13 +53,14 @@ class EmailService {
     });
   }
 
-  async sendReleaseNotificationEmail(email: string, repo: string, newTag: string, releaseUrl: string, unsubscribeToken: string) {
+  async sendNotificationEmail(email: string, repo: string, newTag: string, unsubscribeToken: string): Promise<void> {
     const unsubscribeUrl = `${BASE_URL}/api/unsubscribe/${unsubscribeToken}`;
+    const releaseUrl = `https://github.com/${repo}/releases/tag/${newTag}`;
 
     const html = await renderTemplate('notification-email', {
       repo, newTag, releaseUrl, unsubscribeUrl, styles, });
 
-    return this.transporter.sendMail({
+    await this.transporter.sendMail({
       from: process.env.SMTP_USER,
       to: email,
       subject: `New release ${newTag} for ${repo}`,
@@ -67,6 +69,6 @@ class EmailService {
   }
 }
 
-const emailService = new EmailService(transporter);
+const emailService = new EmailServiceImpl(transporter);
 export default emailService;
-export { EmailService };
+export { EmailServiceImpl as EmailService };

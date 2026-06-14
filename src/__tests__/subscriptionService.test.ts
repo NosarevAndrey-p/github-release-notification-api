@@ -39,7 +39,7 @@ describe('subscriptionService', () => {
   describe('subscribeToRepo', () => {
     it('should subscribe successfully for valid repo and email', async () => {
       mockGithubRequest
-        .mockResolvedValueOnce({ status: 200, ok: true })
+        .mockResolvedValueOnce({ status: 200, ok: true, json: () => Promise.resolve({ id: 123, full_name: 'owner/repo' }) })
         .mockResolvedValueOnce({ status: 200, ok: true, json: () => Promise.resolve({ tag_name: 'v1.0' }) });
       mockDb.getRepositoryByFullName.mockResolvedValue(null);
       mockDb.createRepository.mockResolvedValue({ id: 1, full_name: 'owner/repo', last_seen_tag: 'v1.0' });
@@ -99,7 +99,11 @@ describe('subscriptionService', () => {
     });
 
     it('should throw ConflictError for duplicate confirmed subscription', async () => {
-      mockGithubRequest.mockResolvedValue({ status: 200, ok: true });
+      mockGithubRequest.mockResolvedValue({ 
+        status: 200, 
+        ok: true, 
+        json: () => Promise.resolve({ id: 123, full_name: 'owner/repo' }) 
+      });
       mockDb.getRepositoryByFullName.mockResolvedValue({ id: 1, full_name: 'owner/repo', last_seen_tag: null });
       mockDb.getSubscriptionByEmailAndRepoId.mockResolvedValue({ id: 1, confirmed: 1 });
 
@@ -112,7 +116,11 @@ describe('subscriptionService', () => {
     });
 
     it('should resend email for unconfirmed subscription', async () => {
-      mockGithubRequest.mockResolvedValue({ status: 200, ok: true });
+      mockGithubRequest.mockResolvedValue({ 
+        status: 200, 
+        ok: true, 
+        json: () => Promise.resolve({ id: 123, full_name: 'owner/repo' }) 
+      });
       mockDb.getRepositoryByFullName.mockResolvedValue({ id: 1, full_name: 'owner/repo', last_seen_tag: null });
       mockDb.getSubscriptionByEmailAndRepoId.mockResolvedValue({
         id: 1,

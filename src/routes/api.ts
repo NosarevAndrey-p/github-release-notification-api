@@ -4,15 +4,16 @@ import {
   confirmSubscription,
   unsubscribeFromRepo,
   getSubscriptions,
-  AppError,
 } from '../services/subscriptionService.js';
+import { AppError } from '../types/errors.js';
 import DatabaseClient from '../db/databaseClient.js';
-import { EmailService } from '../services/emailService.js';
+import { IEmailService } from '../types/emailService.js';
+import { GithubRequest } from '../types/github.js';
 
 interface ApiDeps {
   db: DatabaseClient;
-  githubRequest: (path: string) => Promise<Response>;
-  emailService: EmailService;
+  githubRequest: GithubRequest;
+  emailService: IEmailService;
   crypto: {
     randomUUID: () => string;
   };
@@ -65,7 +66,7 @@ function createApiRouter(deps: ApiDeps) {
 
   apiRouter.get('/subscriptions', async (req, res) => {
     try {
-      const result = await getSubscriptions(req.query.email as string | undefined, deps);
+      const result = await getSubscriptions(req.query.email as string, deps);
       return res.status(200).json(result);
     } catch (error) {
       return handleError(res, error);

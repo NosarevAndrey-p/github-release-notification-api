@@ -1,4 +1,4 @@
-import { UserSubscription } from '../db/databaseClient.js';
+import { UserSubscription } from './database.js';
 
 export default class Subscription {
   public email: string;

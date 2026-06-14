@@ -1,45 +1,16 @@
-import Subscription from '../models/subscription.js';
+import Subscription from '../types/subscription.js';
 import DatabaseClient from '../db/databaseClient.js';
-import { EmailService } from './emailService.js';
+import { IEmailService } from '../types/emailService.js';
+import { 
+  BadRequestError, 
+  NotFoundError, 
+  ConflictError, 
+} from '../types/errors.js';
+import { fetchRepository, fetchLatestRelease } from './githubService.js';
+import { GithubRequest } from '../types/github.js';
 
 const repoRegex = /^[^/]+\/[^/]+$/;
 const tokenRegex = /^[0-9a-f-]{36}$/i;
-
-export class AppError extends Error {
-  constructor(message: string, public statusCode: number = 500) {
-    super(message);
-  }
-}
-
-export class BadRequestError extends AppError {
-  constructor(message: string) {
-    super(message, 400);
-  }
-}
-
-export class NotFoundError extends AppError {
-  constructor(message: string) {
-    super(message, 404);
-  }
-}
-
-export class ConflictError extends AppError {
-  constructor(message: string) {
-    super(message, 409);
-  }
-}
-
-export class RateLimitError extends AppError {
-  constructor(message: string) {
-    super(message, 429);
-  }
-}
-
-export class ServiceError extends AppError {
-  constructor(message: string) {
-    super(message, 500);
-  }
-}
 
 function validateEmail(email: string | undefined): asserts email is string {
   if (!email) throw new BadRequestError('email is required');
@@ -55,51 +26,10 @@ function validateToken(token: string | undefined): asserts token is string {
   if (!tokenRegex.test(token)) throw new BadRequestError('invalid token');
 }
 
-async function fetchRepository(repo: string, githubRequest: (path: string) => Promise<Response>) {
-  const ghRes = await githubRequest(`/repos/${repo}`);
-
-  if (ghRes.status === 404) {
-    throw new NotFoundError('repository not found');
-  }
-
-  if (ghRes.status === 429 || ghRes.status === 403) {
-    throw new RateLimitError('github rate limit exceeded');
-  }
-
-  if (!ghRes.ok) {
-    throw new ServiceError('github api error');
-  }
-
-  return ghRes;
-}
-
-async function fetchLatestReleaseTag(repo: string, githubRequest: (path: string) => Promise<Response>): Promise<string | null> {
-  const releaseRes = await githubRequest(`/repos/${repo}/releases/latest`);
-
-  if (releaseRes.status === 200) {
-    const data = await releaseRes.json() as { tag_name?: string };
-    return data.tag_name || null;
-  }
-
-  if (releaseRes.status === 404) {
-    return null;
-  }
-
-  if (releaseRes.status === 429 || releaseRes.status === 403) {
-    throw new RateLimitError('github rate limit exceeded');
-  }
-
-  if (!releaseRes.ok) {
-    throw new ServiceError('github api error (releases)');
-  }
-
-  return null;
-}
-
 interface SubscriptionDeps {
   db: DatabaseClient;
-  githubRequest: (path: string) => Promise<Response>;
-  emailService: EmailService;
+  githubRequest: GithubRequest;
+  emailService: IEmailService;
   crypto: {
     randomUUID: () => string;
   };
@@ -109,12 +39,12 @@ export async function subscribeToRepo({ email, repo }: { email?: string; repo?: 
   validateEmail(email);
   validateRepo(repo);
 
-  await fetchRepository(repo, githubRequest);
+  await fetchRepository(repo, { githubRequest });
 
   let repoRow = await db.getRepositoryByFullName(repo);
   if (!repoRow) {
-    const lastSeenTag = await fetchLatestReleaseTag(repo, githubRequest);
-    repoRow = await db.createRepository(repo, lastSeenTag);
+    const release = await fetchLatestRelease(repo, { githubRequest });
+    repoRow = await db.createRepository(repo, release?.tag_name || null);
   }
 
   const existing = await db.getSubscriptionByEmailAndRepoId(email, repoRow.id);
@@ -177,12 +107,3 @@ export async function getSubscriptions(email: string | undefined, { db }: { db: 
   const rows = await db.getSubscriptionsByEmail(email);
   return rows.map(row => new Subscription(row));
 }
-
-export {
-  AppError as AppErrorExport,
-  BadRequestError as BadRequestErrorExport,
-  NotFoundError as NotFoundErrorExport,
-  ConflictError as ConflictErrorExport,
-  RateLimitError as RateLimitErrorExport,
-  ServiceError as ServiceErrorExport,
-};
