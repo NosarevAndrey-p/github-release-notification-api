@@ -3,12 +3,13 @@ import path from 'path';
 import Database from 'better-sqlite3';
 import { IDatabaseClient, Repository, Subscription, UserSubscription, DatabaseResult } from '../types/database.js';
 import { sqliteQueries as queries } from './sqlQueries.js';
+import { DatabaseConfig } from '../types/config.js';
 
 export default class SqliteDatabase implements IDatabaseClient {
   private db: Database.Database;
 
-  constructor(filename = 'database.sqlite') {
-    this.db = new Database(filename);
+  constructor(config: DatabaseConfig) {
+    this.db = new Database(config.sqliteFile);
     this.db.pragma('foreign_keys = ON');
   }
 

@@ -1,4 +1,4 @@
-import 'dotenv/config';
+import { config } from '../../config/index.js';
 import { IEmailService, EmailDeps } from '../../types/email.js';
 import { emailStyles as styles } from '../../constants/emailStyles.js';
 import { EjsTemplateRenderer } from './templateRenderer.js';
@@ -47,8 +47,8 @@ export async function sendNotificationEmail(
 
 // Configuration for the default instance
 const renderer = new EjsTemplateRenderer();
-const transporter = new NodemailerTransporter();
-const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
+const transporter = new NodemailerTransporter(config.smtp);
+const baseUrl = config.app.baseUrl;
 
 const emailService: IEmailService = {
   sendConfirmationEmail: (email, repo, cToken, uToken) => 

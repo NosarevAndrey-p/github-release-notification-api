@@ -3,19 +3,19 @@ import path from 'path';
 import pg from 'pg';
 import { IDatabaseClient, Repository, Subscription, UserSubscription, DatabaseResult } from '../types/database.js';
 import { postgresQueries as queries } from './sqlQueries.js';
+import { DatabaseConfig } from '../types/config.js';
 
 const { Pool } = pg;
 
 export default class PostgresDatabase implements IDatabaseClient {
   private pool: pg.Pool;
 
-  constructor() {
-    const connectionString = process.env.DATABASE_URL;
-    if (!connectionString) {
-      throw new Error('DATABASE_URL must be defined for Postgres');
+  constructor(config: DatabaseConfig) {
+    if (!config.url) {
+      throw new Error('DatabaseConfig.url must be defined for Postgres');
     }
 
-    this.pool = new Pool({ connectionString });
+    this.pool = new Pool({ connectionString: config.url });
   }
 
   async initSchema(): Promise<void> {

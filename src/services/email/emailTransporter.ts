@@ -1,24 +1,25 @@
 import nodemailer from 'nodemailer';
 import { IEmailTransporter } from '../../types/email.js';
+import { SmtpConfig } from '../../types/config.js';
 
 export class NodemailerTransporter implements IEmailTransporter {
   private transporter: nodemailer.Transporter;
 
-  constructor() {
+  constructor(private config: SmtpConfig) {
     this.transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: Number(process.env.SMTP_PORT),
-      secure: false,
+      host: config.host,
+      port: config.port,
+      secure: config.port === 465,
       auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
+        user: config.user,
+        pass: config.pass,
       },
     });
   }
 
   async send(to: string, subject: string, html: string): Promise<void> {
     await this.transporter.sendMail({
-      from: process.env.SMTP_USER,
+      from: this.config.user,
       to,
       subject,
       html,

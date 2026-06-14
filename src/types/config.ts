@@ -1,0 +1,24 @@
+export interface AppConfig {
+  port: number;
+  scanInterval: number;
+  baseUrl: string;
+}
+
+export interface SmtpConfig {
+  host: string;
+  port: number;
+  user: string;
+  pass: string;
+}
+
+export interface DatabaseConfig {
+  client: string;
+  sqliteFile: string;
+  url?: string;
+}
+
+export interface Config {
+  app: AppConfig;
+  smtp: SmtpConfig;
+  db: DatabaseConfig;
+}

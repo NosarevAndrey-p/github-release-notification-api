@@ -1,14 +1,12 @@
-import 'dotenv/config';
+import { config } from '../config/index.js';
 import SqliteDatabase from './sqliteDatabase.js';
 import PostgresDatabase from './postgresDatabase.js';
 import { IDatabaseClient } from '../types/database.js';
 
-const clientType = (process.env.DB_CLIENT || 'sqlite').toLowerCase();
-
 const drivers: Record<string, () => IDatabaseClient> = {
-  sqlite: () => new SqliteDatabase(process.env.SQLITE_FILE || 'database.sqlite'),
-  postgres: () => new PostgresDatabase(),
-  pg: () => new PostgresDatabase(),
+  sqlite: () => new SqliteDatabase(config.db),
+  postgres: () => new PostgresDatabase(config.db),
+  pg: () => new PostgresDatabase(config.db),
 };
 
 const createDatabaseClient = (type: string): IDatabaseClient => {
@@ -19,6 +17,6 @@ const createDatabaseClient = (type: string): IDatabaseClient => {
   return driver();
 };
 
-const db = createDatabaseClient(clientType);
+const db = createDatabaseClient(config.db.client);
 
 export default db;
