@@ -8,6 +8,7 @@ import {
 import { IRepositoryStore, ISubscriptionStore } from '../types/database.js';
 import { IEmailService } from '../types/email.js';
 import { IGitHubService } from '../types/github.js';
+import { ValidatorService } from '../services/validatorService.js';
 
 interface ApiDeps {
   repoStore: IRepositoryStore;
@@ -23,29 +24,35 @@ function createApiRouter(deps: ApiDeps) {
   const apiRouter = express.Router();
 
   apiRouter.post('/subscribe', async (req, res) => {
-    const result = await subscribeToRepo(
-      {
-        email: req.body.email,
-        repo: req.body.repo,
-      },
-      deps
-    );
+    const { email, repo } = req.body;
+    ValidatorService.validateEmail(email);
+    ValidatorService.validateRepo(repo);
 
+    const result = await subscribeToRepo({ email, repo }, deps);
     return res.status(200).json(result);
   });
 
   apiRouter.get('/confirm/:token', async (req, res) => {
-    const result = await confirmSubscription(req.params.token, deps);
+    const { token } = req.params;
+    ValidatorService.validateToken(token);
+
+    const result = await confirmSubscription(token, deps);
     return res.status(200).json(result);
   });
 
   apiRouter.get('/unsubscribe/:token', async (req, res) => {
-    const result = await unsubscribeFromRepo(req.params.token, deps);
+    const { token } = req.params;
+    ValidatorService.validateToken(token);
+
+    const result = await unsubscribeFromRepo(token, deps);
     return res.status(200).json(result);
   });
 
   apiRouter.get('/subscriptions', async (req, res) => {
-    const result = await getSubscriptions(req.query.email as string, deps);
+    const email = req.query.email as string;
+    ValidatorService.validateEmail(email);
+
+    const result = await getSubscriptions(email, deps);
     return res.status(200).json(result);
   });
 

@@ -17,10 +17,7 @@ async function getOrCreateRepository(repo: string, { repoStore, githubService }:
   return await repoStore.createRepository(repo, release?.tag_name || null);
 }
 
-export async function subscribeToRepo({ email, repo }: { email?: string; repo?: string }, deps: SubscriptionDeps) {
-  ValidatorService.validateEmail(email);
-  ValidatorService.validateRepo(repo);
-
+export async function subscribeToRepo({ email, repo }: { email: string; repo: string }, deps: SubscriptionDeps) {
   const repoRow = await getOrCreateRepository(repo, deps);
 
   const existing = await deps.subStore.getSubscriptionByEmailAndRepoId(email, repoRow.id);
@@ -42,9 +39,7 @@ export async function subscribeToRepo({ email, repo }: { email?: string; repo?: 
   return { message: 'subscription successful, confirmation email sent' };
 }
 
-export async function confirmSubscription(token: string | undefined, { subStore }: SubscriptionDeps) {
-  ValidatorService.validateToken(token);
-
+export async function confirmSubscription(token: string, { subStore }: SubscriptionDeps) {
   const sub = await subStore.getSubscriptionByConfirmToken(token);
   if (!sub) {
     throw new NotFoundError('Token not found');
@@ -58,9 +53,7 @@ export async function confirmSubscription(token: string | undefined, { subStore 
   return { message: 'subscription confirmed successfully' };
 }
 
-export async function unsubscribeFromRepo(token: string | undefined, { subStore, repoStore }: SubscriptionDeps) {
-  ValidatorService.validateToken(token);
-
+export async function unsubscribeFromRepo(token: string, { subStore, repoStore }: SubscriptionDeps) {
   const sub = await subStore.getSubscriptionByUnsubscribeToken(token);
   if (!sub) {
     throw new NotFoundError('Token not found');
@@ -77,9 +70,7 @@ export async function unsubscribeFromRepo(token: string | undefined, { subStore,
   return { message: 'unsubscribed successfully' };
 }
 
-export async function getSubscriptions(email: string | undefined, { subStore }: SubscriptionDeps) {
-  ValidatorService.validateEmail(email);
-
+export async function getSubscriptions(email: string, { subStore }: SubscriptionDeps) {
   const rows = await subStore.getSubscriptionsByEmail(email);
   return rows.map(row => new SubscriptionModel(row));
 }

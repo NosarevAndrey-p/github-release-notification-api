@@ -87,24 +87,6 @@ describe('subscriptionService', () => {
       expect(mockGithubService.fetchLatestRelease).not.toHaveBeenCalled();
     });
 
-    it('should throw BadRequestError for invalid email', async () => {
-      await expect(
-        subscribeToRepo(
-          { email: '', repo: 'owner/repo' },
-          mockDeps
-        )
-      ).rejects.toThrow('email is required');
-    });
-
-    it('should throw BadRequestError for invalid repo format', async () => {
-      await expect(
-        subscribeToRepo(
-          { email: 'test@example.com', repo: 'invalid' },
-          mockDeps
-        )
-      ).rejects.toThrow('invalid repo format');
-    });
-
     it('should throw NotFoundError for non-existent repo', async () => {
       const { NotFoundError } = await import('../types/errors.js');
       mockGithubService.fetchRepository.mockRejectedValue(new NotFoundError('repository not found'));
@@ -177,12 +159,6 @@ describe('subscriptionService', () => {
       expect(mockDb.updateSubscriptionConfirmed).toHaveBeenCalledWith(1);
     });
 
-    it('should throw BadRequestError for invalid token', async () => {
-      await expect(
-        confirmSubscription('', mockDeps)
-      ).rejects.toThrow('token is required');
-    });
-
     it('should throw NotFoundError for non-existent token', async () => {
       mockDb.getSubscriptionByConfirmToken.mockResolvedValue(null);
 
@@ -213,12 +189,6 @@ describe('subscriptionService', () => {
       expect(mockDb.deleteRepositoryById).toHaveBeenCalledWith(1);
     });
 
-    it('should throw BadRequestError for invalid token', async () => {
-      await expect(
-        unsubscribeFromRepo('', mockDeps)
-      ).rejects.toThrow('token is required');
-    });
-
     it('should throw NotFoundError for non-existent token', async () => {
       mockDb.getSubscriptionByUnsubscribeToken.mockResolvedValue(null);
 
@@ -237,12 +207,6 @@ describe('subscriptionService', () => {
 
       expect(result).toHaveLength(1);
       expect(result[0].email).toBe('test@example.com');
-    });
-
-    it('should throw BadRequestError for invalid email', async () => {
-      await expect(
-        getSubscriptions('', mockDeps)
-      ).rejects.toThrow('email is required');
     });
   });
 });
