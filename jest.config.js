@@ -1,6 +1,6 @@
-/** @type {import('ts-jest').JestConfigWithTsJest} */
-export default {
-  preset: 'ts-jest/presets/default-esm',
+/** @type {import('jest').Config} */
+const config = {
+  preset: 'ts-jest',
   testEnvironment: 'node',
   extensionsToTreatAsEsm: ['.ts'],
   moduleNameMapper: {
@@ -14,5 +14,10 @@ export default {
       },
     ],
   },
-  testPathIgnorePatterns: ['/node_modules/', '/dist/'],
+  testMatch: ['<rootDir>/src/**/__tests__/**/*.test.ts'],
+  modulePathIgnorePatterns: ['<rootDir>/dist/'],
+  collectCoverage: true,
+  coverageDirectory: 'coverage',
 };
+
+export default config;

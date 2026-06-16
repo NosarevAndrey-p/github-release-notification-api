@@ -12,8 +12,6 @@ export interface SmtpConfig {
 }
 
 export interface DatabaseConfig {
-  client: string;
-  sqliteFile: string;
   url?: string;
 }
 

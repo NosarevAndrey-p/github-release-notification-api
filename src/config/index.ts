@@ -14,8 +14,6 @@ export const config: Config = {
     pass: process.env.SMTP_PASS || '',
   },
   db: {
-    client: (process.env.DB_CLIENT || 'sqlite').toLowerCase(),
-    sqliteFile: process.env.SQLITE_FILE || 'database.sqlite',
     url: process.env.DATABASE_URL,
   },
 };

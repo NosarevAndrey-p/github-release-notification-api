@@ -28,7 +28,6 @@ services:
     env_file:
       - .env
     environment:
-      - DB_CLIENT=pg
       - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-repo_subscriber}
 
 volumes:

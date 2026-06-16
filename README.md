@@ -96,8 +96,7 @@ SMTP_PASS=your_app_password
 # Default: 60000 (1 minute)
 SCAN_INTERVAL=60000
 
-# Database client: "pg" for PostgreSQL, "sqlite" for SQLite
-DB_CLIENT=pg
+# SCAN_INTERVAL=60000
 
 # PostgreSQL connection settings (used when DB_CLIENT=pg)
 POSTGRES_USER=postgres
@@ -170,7 +169,7 @@ docker-compose down -v
 ### Prerequisites
 
 - Node.js 18+
-- PostgreSQL running locally **or** use SQLite by setting `DB_CLIENT=sqlite` in `.env`
+- PostgreSQL running locally
 
 ### Steps
 
@@ -182,7 +181,6 @@ docker-compose down -v
 2. Set up your `.env`:
    ```bash
    cp .env.example .env
-   # For SQLite local dev, set DB_CLIENT=sqlite (no Postgres needed)
    ```
 
 3. Start the development server:
@@ -237,4 +235,7 @@ When a `429 Too Many Requests` response is received, the service logs the event 
 ## API Documentation
 
 The full Swagger specification is available in `swagger.yaml`. You can view it interactively at [https://editor.swagger.io/](https://editor.swagger.io/) by pasting the file contents.
+ contents.
+  file contents.
+ contents.
  
