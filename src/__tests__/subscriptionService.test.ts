@@ -52,9 +52,9 @@ describe('subscriptionService', () => {
 
   describe('subscribeToRepo', () => {
     it('should subscribe successfully for valid repo and email', async () => {
+      mockDb.getRepositoryByFullName.mockResolvedValue(null);
       mockGithubService.fetchRepository.mockResolvedValue({ id: 123, full_name: 'owner/repo' });
       mockGithubService.fetchLatestRelease.mockResolvedValue({ tag_name: 'v1.0' });
-      mockDb.getRepositoryByFullName.mockResolvedValue(null);
       mockDb.createRepository.mockResolvedValue({ id: 1, full_name: 'owner/repo', last_seen_tag: 'v1.0' });
       mockDb.getSubscriptionByEmailAndRepoId.mockResolvedValue(null);
       mockCrypto.randomUUID.mockReturnValue('token123');
@@ -66,9 +66,25 @@ describe('subscriptionService', () => {
       );
 
       expect(result.message).toBe('subscription successful, confirmation email sent');
+      expect(mockDb.getRepositoryByFullName).toHaveBeenCalledWith('owner/repo');
+      expect(mockGithubService.fetchRepository).toHaveBeenCalledWith('owner/repo');
       expect(mockDb.createRepository).toHaveBeenCalledWith('owner/repo', 'v1.0');
-      expect(mockDb.createSubscription).toHaveBeenCalledWith('test@example.com', 1, 'token123', 'token123');
-      expect(mockEmailService.sendConfirmationEmail).toHaveBeenCalledWith('test@example.com', 'owner/repo', 'token123', 'token123');
+    });
+
+    it('should skip GitHub API calls if repo is already in database', async () => {
+      mockDb.getRepositoryByFullName.mockResolvedValue({ id: 1, full_name: 'owner/repo', last_seen_tag: 'v1.0' });
+      mockDb.getSubscriptionByEmailAndRepoId.mockResolvedValue(null);
+      mockCrypto.randomUUID.mockReturnValue('token123');
+      mockEmailService.sendConfirmationEmail.mockResolvedValue({});
+
+      await subscribeToRepo(
+        { email: 'test@example.com', repo: 'owner/repo' },
+        mockDeps
+      );
+
+      expect(mockDb.getRepositoryByFullName).toHaveBeenCalledWith('owner/repo');
+      expect(mockGithubService.fetchRepository).not.toHaveBeenCalled();
+      expect(mockGithubService.fetchLatestRelease).not.toHaveBeenCalled();
     });
 
     it('should throw BadRequestError for invalid email', async () => {

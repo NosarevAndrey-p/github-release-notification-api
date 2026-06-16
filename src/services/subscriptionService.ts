@@ -6,14 +6,15 @@ import {
 import { ValidatorService } from './validatorService.js';
 
 async function getOrCreateRepository(repo: string, { repoStore, githubService }: SubscriptionDeps) {
-  await githubService.fetchRepository(repo);
-
   let repoRow = await repoStore.getRepositoryByFullName(repo);
-  if (!repoRow) {
-    const release = await githubService.fetchLatestRelease(repo);
-    repoRow = await repoStore.createRepository(repo, release?.tag_name || null);
+  if (repoRow) {
+    return repoRow;
   }
-  return repoRow;
+
+  await githubService.fetchRepository(repo);
+  const release = await githubService.fetchLatestRelease(repo);
+  
+  return await repoStore.createRepository(repo, release?.tag_name || null);
 }
 
 export async function subscribeToRepo({ email, repo }: { email?: string; repo?: string }, deps: SubscriptionDeps) {
