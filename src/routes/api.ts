@@ -9,15 +9,14 @@ import { IRepositoryStore, ISubscriptionStore } from '../types/database.js';
 import { IEmailService } from '../types/email.js';
 import { IGitHubService } from '../types/github.js';
 import { ValidatorService } from '../services/validatorService.js';
+import { UUIDProvider } from '../types/subscription.js';
 
 interface ApiDeps {
   repoStore: IRepositoryStore;
   subStore: ISubscriptionStore;
   githubService: IGitHubService;
   emailService: IEmailService;
-  crypto: {
-    randomUUID: () => string;
-  };
+  crypto: UUIDProvider;
 }
 
 function createApiRouter(deps: ApiDeps) {
