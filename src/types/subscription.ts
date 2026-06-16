@@ -1,4 +1,4 @@
-import { UserSubscription, IRepositoryStore, ISubscriptionStore } from './database.js';
+import { IRepositoryStore, ISubscriptionStore } from './database.js';
 import { IEmailService } from './email.js';
 import { IGitHubService } from './github.js';
 
@@ -20,11 +20,16 @@ export default class SubscriptionModel {
   public confirmed: boolean;
   public last_seen_tag: string | null;
 
-  constructor({ email, repo, confirmed, last_seen_tag }: UserSubscription) {
-    this.email = email;
-    this.repo = repo;
-    this.confirmed = Boolean(confirmed);
-    this.last_seen_tag = last_seen_tag;
+  constructor(data: {
+    email: string;
+    repo: string;
+    confirmed: number | boolean;
+    last_seen_tag: string | null;
+  }) {
+    this.email = data.email;
+    this.repo = data.repo;
+    this.confirmed = Boolean(data.confirmed);
+    this.last_seen_tag = data.last_seen_tag;
   }
 }
 
