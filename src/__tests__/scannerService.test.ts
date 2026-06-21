@@ -6,6 +6,7 @@ describe('scannerService', () => {
   let mockDb: any;
   let mockGithubService: any;
   let mockNotifier: any;
+  let mockLogger: any;
   let deps: ScannerDeps;
 
   beforeEach(() => {
@@ -21,14 +22,18 @@ describe('scannerService', () => {
       notify: jest.fn() as any,
     };
     mockNotifier.notify.mockResolvedValue(undefined);
+    mockLogger = {
+      info: jest.fn(),
+      warn: jest.fn(),
+      error: jest.fn(),
+    };
     deps = {
       repoStore: mockDb,
       subStore: mockDb,
       githubService: mockGithubService,
       notifier: mockNotifier,
+      logger: mockLogger,
     };
-    jest.spyOn(console, 'error').mockImplementation(() => {});
-    jest.spyOn(console, 'warn').mockImplementation(() => {});
   });
 
   afterEach(() => {
@@ -77,7 +82,7 @@ describe('scannerService', () => {
 
     await scan(deps);
 
-    expect(console.warn).toHaveBeenCalledWith('Rate limit hit, stopping scan early');
+    expect(mockLogger.warn).toHaveBeenCalledWith('Rate limit hit, stopping scan early');
     expect(mockNotifier.notify).not.toHaveBeenCalled();
   });
 });

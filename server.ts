@@ -6,6 +6,7 @@ import { EmailService } from './src/services/email/emailService.js';
 import { EjsTemplateRenderer } from './src/services/email/templateRenderer.js';
 import { NodemailerTransporter } from './src/services/email/emailTransporter.js';
 import { EmailNotifier } from './src/services/email/emailNotifier.js';
+import { logger } from './src/services/loggerService.js';
 import { config } from './src/config/index.js';
 
 await db.initSchema();
@@ -35,7 +36,8 @@ app.listen(config.app.port, () => {
     repoStore: db, 
     subStore: db, 
     githubService, 
-    notifier 
+    notifier,
+    logger
   };
 
   const runScanner = async () => {

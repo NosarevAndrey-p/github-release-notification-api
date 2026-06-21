@@ -3,10 +3,8 @@ import {
   NotFoundError, 
   ConflictError, 
 } from '../types/errors.js';
-import { ValidatorService } from './validatorService.js';
-
 async function getOrCreateRepository(repo: string, { repoStore, githubService }: SubscriptionDeps) {
-  let repoRow = await repoStore.getRepositoryByFullName(repo);
+  const repoRow = await repoStore.getRepositoryByFullName(repo);
   if (repoRow) {
     return repoRow;
   }

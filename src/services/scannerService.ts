@@ -2,16 +2,18 @@ import { IRepositoryStore, ISubscriptionStore, Repository } from '../types/datab
 import { IGitHubService } from '../types/github.js';
 import { INotifier } from '../types/notification.js';
 import { RateLimitError } from '../types/errors.js';
+import { ILogger } from '../types/logger.js';
 
 export interface ScannerDeps {
   repoStore: IRepositoryStore;
   subStore: ISubscriptionStore;
   githubService: IGitHubService;
   notifier: INotifier;
+  logger: ILogger;
 }
 
 export async function scan(deps: ScannerDeps) {
-  const { repoStore } = deps;
+  const { repoStore, logger } = deps;
   const repos = await repoStore.getConfirmedRepositories();
   
   if (!repos || repos.length === 0) return;
@@ -21,10 +23,10 @@ export async function scan(deps: ScannerDeps) {
       await processRepository(repo, deps);
     } catch (error) {
       if (error instanceof RateLimitError) {
-        console.warn('Rate limit hit, stopping scan early');
+        logger.warn('Rate limit hit, stopping scan early');
         return;
       }
-      console.error(`Scan failed for ${repo.full_name}:`, error);
+      logger.error(`Scan failed for ${repo.full_name}:`, error);
     }
   }
 }
