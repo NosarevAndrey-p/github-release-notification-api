@@ -2,6 +2,8 @@ import nodemailer from 'nodemailer';
 import { IEmailTransporter } from '../../types/email.js';
 import { SmtpConfig } from '../../types/config.js';
 
+const SECURE_SMTP_PORT = 465;
+
 export class NodemailerTransporter implements IEmailTransporter {
   private transporter: nodemailer.Transporter;
 
@@ -9,7 +11,7 @@ export class NodemailerTransporter implements IEmailTransporter {
     this.transporter = nodemailer.createTransport({
       host: config.host,
       port: config.port,
-      secure: config.port === 465,
+      secure: config.port === SECURE_SMTP_PORT,
       auth: {
         user: config.user,
         pass: config.pass,
