@@ -5,7 +5,7 @@ import {
   unsubscribeFromRepo,
   getSubscriptions,
 } from '../services/subscriptionService.js';
-import { RateLimitError } from '../types/errors.js';
+import { RateLimitError, NotFoundError } from '../types/errors.js';
 import { SubscriptionDeps } from '../types/subscription.js';
 
 describe('subscriptionService', () => {
@@ -88,7 +88,6 @@ describe('subscriptionService', () => {
     });
 
     it('should throw NotFoundError for non-existent repo', async () => {
-      const { NotFoundError } = await import('../types/errors.js');
       mockGithubService.fetchRepository.mockRejectedValue(new NotFoundError('repository not found'));
 
       await expect(
