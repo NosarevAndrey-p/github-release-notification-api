@@ -2,7 +2,7 @@ import request from 'supertest';
 import express, { Express } from 'express';
 import createApiRouter from '../routes/api.js';
 import { jest } from '@jest/globals';
-import { errorMiddleware } from '../middleware/errorMiddleware.js';
+import { createErrorMiddleware } from '../middleware/errorMiddleware.js';
 
 describe('API Routes', () => {
   let app: Express;
@@ -42,12 +42,18 @@ describe('API Routes', () => {
     crypto: mockCrypto,
   };
 
+  const mockLogger = {
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
+  };
+
   beforeEach(() => {
     jest.clearAllMocks();
     app = express();
     app.use(express.json());
     app.use('/api', createApiRouter(mockDeps as any));
-    app.use(errorMiddleware);
+    app.use(createErrorMiddleware(mockLogger as any));
   });
 
   describe('POST /api/subscribe', () => {

@@ -25,12 +25,13 @@ const app = createApp({
   subStore: db,
   githubService,
   emailService,
+  logger,
 });
 
 app.listen(config.app.port, () => {
-  console.info(`Server running on port ${config.app.port}`);
+  logger.info(`Server running on port ${config.app.port}`);
 
-  const notifier = new EmailNotifier(emailService);
+  const notifier = new EmailNotifier(emailService, logger);
 
   const scannerDeps = { 
     repoStore: db, 
@@ -44,7 +45,7 @@ app.listen(config.app.port, () => {
     try {
       await scan(scannerDeps);
     } catch (error) {
-      console.error('Scanner error:', error);
+      logger.error('Scanner error:', error);
     } finally {
       setTimeout(runScanner, config.app.scanInterval);
     }
