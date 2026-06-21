@@ -15,7 +15,7 @@ export const config: Config = {
     pass: process.env.SMTP_PASS || '',
   },
   db: {
-    url: process.env.DATABASE_URL,
+    url: process.env.DATABASE_URL || '',
     schemaPath: process.env.DB_SCHEMA_PATH || path.join(process.cwd(), 'src', 'db', 'schema.pg.sql'),
   },
 };

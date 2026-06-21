@@ -37,7 +37,7 @@ const queries = {
 
 export default class PostgresDatabase implements IDatabaseClient {
   private pool: pg.Pool;
-  private schemaPath?: string;
+  private schemaPath: string;
 
   constructor(config: DatabaseConfig) {
     if (!config.url) {
@@ -49,9 +49,6 @@ export default class PostgresDatabase implements IDatabaseClient {
   }
 
   async initSchema(): Promise<void> {
-    if (!this.schemaPath) {
-      throw new Error('DatabaseConfig.schemaPath must be defined to init schema');
-    }
     const schema = fs.readFileSync(this.schemaPath, 'utf-8');
 
     await this.pool.query(schema);
