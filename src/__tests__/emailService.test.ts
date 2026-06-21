@@ -1,29 +1,25 @@
-import { jest } from '@jest/globals';
 import { EmailService } from '../services/email/emailService.js';
-import { EmailDeps } from '../types/email.js';
+import { EmailDeps, IEmailTransporter, ITemplateRenderer } from '../types/email.js';
+import { mock, mockReset } from 'jest-mock-extended';
 
 describe('EmailService', () => {
-  let mockTransporter: any;
-  let mockRenderer: any;
-  let mockDeps: EmailDeps;
+  const mockTransporter = mock<IEmailTransporter>();
+  const mockRenderer = mock<ITemplateRenderer>();
+  
+  const mockDeps: EmailDeps = {
+    baseUrl: 'http://localhost:3000',
+    transporter: mockTransporter,
+    renderer: mockRenderer,
+  };
+
   let emailService: EmailService;
 
   beforeEach(() => {
-    mockTransporter = {
-      send: jest.fn() as any,
-    };
-    mockTransporter.send.mockResolvedValue(undefined);
-    
-    mockRenderer = {
-      render: jest.fn() as any,
-    };
-    mockRenderer.render.mockResolvedValue('<html>Test Template</html>');
+    mockReset(mockTransporter);
+    mockReset(mockRenderer);
 
-    mockDeps = {
-      baseUrl: 'http://localhost:3000',
-      transporter: mockTransporter,
-      renderer: mockRenderer,
-    };
+    mockTransporter.send.mockResolvedValue(undefined);
+    mockRenderer.render.mockResolvedValue('<html>Test Template</html>');
 
     emailService = new EmailService(mockDeps);
   });

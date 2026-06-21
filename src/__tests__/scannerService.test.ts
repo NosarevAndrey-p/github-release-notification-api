@@ -1,39 +1,33 @@
 import { jest } from '@jest/globals';
 import { scan, ScannerDeps } from '../services/scannerService.js';
 import { RateLimitError } from '../types/errors.js';
+import { mock, mockReset } from 'jest-mock-extended';
+import { IRepositoryStore, ISubscriptionStore, Subscription } from '../types/database.js';
+import { IGitHubService } from '../types/github.js';
+import { INotifier } from '../types/notification.js';
+import { ILogger } from '../types/logger.js';
 
 describe('scannerService', () => {
-  let mockDb: any;
-  let mockGithubService: any;
-  let mockNotifier: any;
-  let mockLogger: any;
-  let deps: ScannerDeps;
+  const mockDb = mock<IRepositoryStore & ISubscriptionStore>();
+  const mockGithubService = mock<IGitHubService>();
+  const mockNotifier = mock<INotifier>();
+  const mockLogger = mock<ILogger>();
+
+  const deps: ScannerDeps = {
+    repoStore: mockDb,
+    subStore: mockDb,
+    githubService: mockGithubService,
+    notifier: mockNotifier,
+    logger: mockLogger,
+  };
 
   beforeEach(() => {
-    mockDb = {
-      getConfirmedRepositories: jest.fn(),
-      getConfirmedSubscriptionsByRepoId: jest.fn(),
-      updateRepositoryLastSeenTag: jest.fn(),
-    };
-    mockGithubService = {
-      fetchLatestRelease: jest.fn(),
-    };
-    mockNotifier = {
-      notify: jest.fn() as any,
-    };
+    mockReset(mockDb);
+    mockReset(mockGithubService);
+    mockReset(mockNotifier);
+    mockReset(mockLogger);
+
     mockNotifier.notify.mockResolvedValue(undefined);
-    mockLogger = {
-      info: jest.fn(),
-      warn: jest.fn(),
-      error: jest.fn(),
-    };
-    deps = {
-      repoStore: mockDb,
-      subStore: mockDb,
-      githubService: mockGithubService,
-      notifier: mockNotifier,
-      logger: mockLogger,
-    };
   });
 
   afterEach(() => {
@@ -49,7 +43,7 @@ describe('scannerService', () => {
       html_url: 'https://github.com/owner/repo/releases/tag/v1.1' 
     });
     mockDb.getConfirmedSubscriptionsByRepoId.mockResolvedValue([
-      { email: 'user1@example.com', unsubscribe_token: 'token1' },
+      { email: 'user1@example.com', unsubscribe_token: 'token1' } as unknown as Subscription,
     ]);
 
     await scan(deps);
@@ -66,7 +60,7 @@ describe('scannerService', () => {
     mockDb.getConfirmedRepositories.mockResolvedValue([
       { id: 1, full_name: 'owner/repo', last_seen_tag: 'v1.0' },
     ]);
-    mockGithubService.fetchLatestRelease.mockResolvedValue({ tag_name: 'v1.0' });
+    mockGithubService.fetchLatestRelease.mockResolvedValue({ tag_name: 'v1.0', html_url: '' });
 
     await scan(deps);
 

@@ -1,4 +1,3 @@
-import { jest } from '@jest/globals';
 import {
   subscribeToRepo,
   confirmSubscription,
@@ -7,58 +6,42 @@ import {
 } from '../services/subscriptionService.js';
 import { RateLimitError, NotFoundError } from '../types/errors.js';
 import { SubscriptionDeps } from '../types/subscription.js';
+import { mock, mockReset } from 'jest-mock-extended';
+import { IRepositoryStore, ISubscriptionStore, Subscription } from '../types/database.js';
+import { IGitHubService } from '../types/github.js';
+import { IEmailService } from '../types/email.js';
+import { UUIDProvider } from '../types/subscription.js';
 
 describe('subscriptionService', () => {
-  let mockDb: any;
-  let mockGithubService: any;
-  let mockEmailService: any;
-  let mockCrypto: any;
-  let mockDeps: SubscriptionDeps;
+  const mockDb = mock<IRepositoryStore & ISubscriptionStore>();
+  const mockGithubService = mock<IGitHubService>();
+  const mockEmailService = mock<IEmailService>();
+  const mockCrypto = mock<UUIDProvider>();
+
+  const mockDeps: SubscriptionDeps = {
+    repoStore: mockDb,
+    subStore: mockDb,
+    githubService: mockGithubService,
+    emailService: mockEmailService,
+    crypto: mockCrypto,
+  };
 
   beforeEach(() => {
-    mockDb = {
-      getRepositoryByFullName: jest.fn(),
-      createRepository: jest.fn(),
-      getSubscriptionByEmailAndRepoId: jest.fn(),
-      createSubscription: jest.fn(),
-      getSubscriptionByConfirmToken: jest.fn(),
-      updateSubscriptionConfirmed: jest.fn(),
-      getSubscriptionByUnsubscribeToken: jest.fn(),
-      deleteSubscriptionById: jest.fn(),
-      countSubscriptionsByRepoId: jest.fn(),
-      deleteRepositoryById: jest.fn(),
-      getSubscriptionsByEmail: jest.fn(),
-    };
-
-    mockGithubService = {
-      fetchRepository: jest.fn(),
-      fetchLatestRelease: jest.fn(),
-    };
-    mockEmailService = {
-      sendConfirmationEmail: jest.fn(),
-    };
-    mockCrypto = {
-      randomUUID: jest.fn(),
-    };
-
-    mockDeps = {
-      repoStore: mockDb,
-      subStore: mockDb,
-      githubService: mockGithubService,
-      emailService: mockEmailService,
-      crypto: mockCrypto,
-    };
+    mockReset(mockDb);
+    mockReset(mockGithubService);
+    mockReset(mockEmailService);
+    mockReset(mockCrypto);
   });
 
   describe('subscribeToRepo', () => {
     it('should subscribe successfully for valid repo and email', async () => {
       mockDb.getRepositoryByFullName.mockResolvedValue(null);
       mockGithubService.fetchRepository.mockResolvedValue({ id: 123, full_name: 'owner/repo' });
-      mockGithubService.fetchLatestRelease.mockResolvedValue({ tag_name: 'v1.0' });
+      mockGithubService.fetchLatestRelease.mockResolvedValue({ tag_name: 'v1.0', html_url: '' });
       mockDb.createRepository.mockResolvedValue({ id: 1, full_name: 'owner/repo', last_seen_tag: 'v1.0' });
       mockDb.getSubscriptionByEmailAndRepoId.mockResolvedValue(null);
       mockCrypto.randomUUID.mockReturnValue('token123');
-      mockEmailService.sendConfirmationEmail.mockResolvedValue({});
+      mockEmailService.sendConfirmationEmail.mockResolvedValue(undefined);
 
       const result = await subscribeToRepo(
         { email: 'test@example.com', repo: 'owner/repo' },
@@ -75,7 +58,7 @@ describe('subscriptionService', () => {
       mockDb.getRepositoryByFullName.mockResolvedValue({ id: 1, full_name: 'owner/repo', last_seen_tag: 'v1.0' });
       mockDb.getSubscriptionByEmailAndRepoId.mockResolvedValue(null);
       mockCrypto.randomUUID.mockReturnValue('token123');
-      mockEmailService.sendConfirmationEmail.mockResolvedValue({});
+      mockEmailService.sendConfirmationEmail.mockResolvedValue(undefined);
 
       await subscribeToRepo(
         { email: 'test@example.com', repo: 'owner/repo' },
@@ -112,7 +95,7 @@ describe('subscriptionService', () => {
     it('should throw ConflictError for duplicate confirmed subscription', async () => {
       mockGithubService.fetchRepository.mockResolvedValue({ id: 123, full_name: 'owner/repo' });
       mockDb.getRepositoryByFullName.mockResolvedValue({ id: 1, full_name: 'owner/repo', last_seen_tag: null });
-      mockDb.getSubscriptionByEmailAndRepoId.mockResolvedValue({ id: 1, confirmed: 1 });
+      mockDb.getSubscriptionByEmailAndRepoId.mockResolvedValue({ id: 1, confirmed: 1 } as unknown as Subscription);
 
       await expect(
         subscribeToRepo(
@@ -130,8 +113,8 @@ describe('subscriptionService', () => {
         confirmed: 0,
         confirm_token: 'token',
         unsubscribe_token: 'unsub'
-      });
-      mockEmailService.sendConfirmationEmail.mockResolvedValue({});
+      } as unknown as Subscription);
+      mockEmailService.sendConfirmationEmail.mockResolvedValue(undefined);
 
       const result = await subscribeToRepo(
         { email: 'test@example.com', repo: 'owner/repo' },
@@ -150,7 +133,7 @@ describe('subscriptionService', () => {
 
   describe('confirmSubscription', () => {
     it('should confirm subscription successfully', async () => {
-      mockDb.getSubscriptionByConfirmToken.mockResolvedValue({ id: 1, confirmed: 0 });
+      mockDb.getSubscriptionByConfirmToken.mockResolvedValue({ id: 1, confirmed: 0 } as unknown as Subscription);
 
       const result = await confirmSubscription('12345678-1234-1234-1234-123456789012', mockDeps);
 
@@ -167,7 +150,7 @@ describe('subscriptionService', () => {
     });
 
     it('should return already confirmed message', async () => {
-      mockDb.getSubscriptionByConfirmToken.mockResolvedValue({ id: 1, confirmed: 1 });
+      mockDb.getSubscriptionByConfirmToken.mockResolvedValue({ id: 1, confirmed: 1 } as unknown as Subscription);
 
       const result = await confirmSubscription('12345678-1234-1234-1234-123456789012', mockDeps);
 
@@ -178,7 +161,7 @@ describe('subscriptionService', () => {
 
   describe('unsubscribeFromRepo', () => {
     it('should unsubscribe successfully', async () => {
-      mockDb.getSubscriptionByUnsubscribeToken.mockResolvedValue({ id: 1, repo_id: 1 });
+      mockDb.getSubscriptionByUnsubscribeToken.mockResolvedValue({ id: 1, repo_id: 1 } as unknown as Subscription);
       mockDb.countSubscriptionsByRepoId.mockResolvedValue(0);
 
       const result = await unsubscribeFromRepo('12345678-1234-1234-1234-123456789012', mockDeps);
@@ -199,7 +182,7 @@ describe('subscriptionService', () => {
 
   describe('getSubscriptions', () => {
     it('should return subscriptions for valid email', async () => {
-      const mockSubscriptions = [{ email: 'test@example.com', repo: 'owner/repo', confirmed: true }];
+      const mockSubscriptions = [{ email: 'test@example.com', repo: 'owner/repo', confirmed: 1, last_seen_tag: null }];
       mockDb.getSubscriptionsByEmail.mockResolvedValue(mockSubscriptions);
 
       const result = await getSubscriptions('test@example.com', mockDeps);

@@ -23,7 +23,7 @@ export default tseslint.config(
       "eqeqeq": "error",
       "no-console": ["error", { allow: ["warn", "error", "info"] }],
       "prefer-const": "error",
-      "@typescript-eslint/no-explicit-any": "warn",
+      "@typescript-eslint/no-explicit-any": "error",
     },
   },
   {
@@ -32,9 +32,6 @@ export default tseslint.config(
       globals: {
         ...globals.jest,
       },
-    },
-    rules: {
-      "@typescript-eslint/no-explicit-any": "off",
     },
   },
 );
