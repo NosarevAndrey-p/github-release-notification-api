@@ -13,6 +13,7 @@ export interface SmtpConfig {
 
 export interface DatabaseConfig {
   url?: string;
+  schemaPath?: string;
 }
 
 export interface Config {

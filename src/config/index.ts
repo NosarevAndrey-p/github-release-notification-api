@@ -1,4 +1,5 @@
 import 'dotenv/config';
+import path from 'path';
 import { Config } from '../types/config.js';
 
 export const config: Config = {
@@ -15,5 +16,6 @@ export const config: Config = {
   },
   db: {
     url: process.env.DATABASE_URL,
+    schemaPath: process.env.DB_SCHEMA_PATH || path.join(process.cwd(), 'src', 'db', 'schema.pg.sql'),
   },
 };

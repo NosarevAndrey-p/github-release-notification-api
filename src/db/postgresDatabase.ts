@@ -1,5 +1,4 @@
 import fs from 'fs';
-import path from 'path';
 import pg from 'pg';
 import { IDatabaseClient, Repository, Subscription, UserSubscription, DatabaseResult } from '../types/database.js';
 import { DatabaseConfig } from '../types/config.js';
@@ -38,6 +37,7 @@ const queries = {
 
 export default class PostgresDatabase implements IDatabaseClient {
   private pool: pg.Pool;
+  private schemaPath?: string;
 
   constructor(config: DatabaseConfig) {
     if (!config.url) {
@@ -45,11 +45,14 @@ export default class PostgresDatabase implements IDatabaseClient {
     }
 
     this.pool = new Pool({ connectionString: config.url });
+    this.schemaPath = config.schemaPath;
   }
 
   async initSchema(): Promise<void> {
-    const schemaPath = path.join(process.cwd(), 'src', 'db', 'schema.pg.sql');
-    const schema = fs.readFileSync(schemaPath, 'utf-8');
+    if (!this.schemaPath) {
+      throw new Error('DatabaseConfig.schemaPath must be defined to init schema');
+    }
+    const schema = fs.readFileSync(this.schemaPath, 'utf-8');
 
     await this.pool.query(schema);
   }
