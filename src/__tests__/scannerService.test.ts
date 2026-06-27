@@ -4,30 +4,30 @@ import { RateLimitError } from '../types/errors.js';
 import { mock, mockReset } from 'jest-mock-extended';
 import { IRepositoryStore, ISubscriptionStore, Subscription } from '../types/database.js';
 import { IGitHubService } from '../types/github.js';
-import { INotifier } from '../types/notification.js';
+import { IEmailService } from '../types/email.js';
 import { ILogger } from '../types/logger.js';
 
 describe('scannerService', () => {
   const mockDb = mock<IRepositoryStore & ISubscriptionStore>();
   const mockGithubService = mock<IGitHubService>();
-  const mockNotifier = mock<INotifier>();
+  const mockEmailService = mock<IEmailService>();
   const mockLogger = mock<ILogger>();
 
   const deps: ScannerDeps = {
     repoStore: mockDb,
     subStore: mockDb,
     githubService: mockGithubService,
-    notifier: mockNotifier,
+    emailService: mockEmailService,
     logger: mockLogger,
   };
 
   beforeEach(() => {
     mockReset(mockDb);
     mockReset(mockGithubService);
-    mockReset(mockNotifier);
+    mockReset(mockEmailService);
     mockReset(mockLogger);
 
-    mockNotifier.notify.mockResolvedValue(undefined);
+    mockEmailService.sendNotificationEmail.mockResolvedValue(undefined);
   });
 
   afterEach(() => {
@@ -48,10 +48,11 @@ describe('scannerService', () => {
 
     await scan(deps);
 
-    expect(mockNotifier.notify).toHaveBeenCalledWith(
+    expect(mockEmailService.sendNotificationEmail).toHaveBeenCalledWith(
+      'user1@example.com',
       'owner/repo',
       'v1.1',
-      expect.arrayContaining([expect.objectContaining({ email: 'user1@example.com' })])
+      'token1'
     );
     expect(mockDb.updateRepositoryLastSeenTag).toHaveBeenCalledWith(1, 'v1.1');
   });
@@ -64,7 +65,7 @@ describe('scannerService', () => {
 
     await scan(deps);
 
-    expect(mockNotifier.notify).not.toHaveBeenCalled();
+    expect(mockEmailService.sendNotificationEmail).not.toHaveBeenCalled();
     expect(mockDb.updateRepositoryLastSeenTag).not.toHaveBeenCalled();
   });
 
@@ -77,6 +78,6 @@ describe('scannerService', () => {
     await scan(deps);
 
     expect(mockLogger.warn).toHaveBeenCalledWith('Rate limit hit, stopping scan early');
-    expect(mockNotifier.notify).not.toHaveBeenCalled();
+    expect(mockEmailService.sendNotificationEmail).not.toHaveBeenCalled();
   });
 });

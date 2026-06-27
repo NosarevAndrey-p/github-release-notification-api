@@ -5,7 +5,6 @@ import githubService from './src/services/githubService.js';
 import { EmailService } from './src/services/email/emailService.js';
 import { EjsTemplateRenderer } from './src/services/email/templateRenderer.js';
 import { NodemailerTransporter } from './src/services/email/emailTransporter.js';
-import { EmailNotifier } from './src/services/email/emailNotifier.js';
 import { logger } from './src/services/loggerService.js';
 import { config } from './src/config/index.js';
 import crypto from 'crypto';
@@ -33,13 +32,11 @@ const app = createApp({
 app.listen(config.app.port, () => {
   logger.info(`Server running on port ${config.app.port}`);
 
-  const notifier = new EmailNotifier(emailService, logger);
-
   const scannerDeps = { 
     repoStore: db, 
     subStore: db, 
     githubService, 
-    notifier,
+    emailService,
     logger
   };
 

@@ -1,6 +1,6 @@
 import { IRepositoryStore, ISubscriptionStore, Repository } from '../types/database.js';
 import { IGitHubService } from '../types/github.js';
-import { INotifier } from '../types/notification.js';
+import { IEmailService } from '../types/email.js';
 import { RateLimitError } from '../types/errors.js';
 import { ILogger } from '../types/logger.js';
 
@@ -8,7 +8,7 @@ export interface ScannerDeps {
   repoStore: IRepositoryStore;
   subStore: ISubscriptionStore;
   githubService: IGitHubService;
-  notifier: INotifier;
+  emailService: IEmailService;
   logger: ILogger;
 }
 
@@ -32,7 +32,7 @@ export async function scan(deps: ScannerDeps) {
 }
 
 async function processRepository(repo: Repository, deps: ScannerDeps) {
-  const { githubService, subStore, repoStore, notifier } = deps;
+  const { githubService, subStore, repoStore, emailService, logger } = deps;
   
   const release = await githubService.fetchLatestRelease(repo.full_name);
   if (!release || !release.tag_name || release.tag_name === repo.last_seen_tag) {
@@ -41,7 +41,17 @@ async function processRepository(repo: Repository, deps: ScannerDeps) {
 
   const subscriptions = await subStore.getConfirmedSubscriptionsByRepoId(repo.id);
   if (subscriptions.length > 0) {
-    await notifier.notify(repo.full_name, release.tag_name, subscriptions);
+    const notifications = subscriptions.map(sub =>
+      emailService.sendNotificationEmail(
+        sub.email,
+        repo.full_name,
+        release.tag_name,
+        sub.unsubscribe_token
+      ).catch(error => {
+        logger.error(`Failed to email ${sub.email} for ${repo.full_name}:`, error);
+      })
+    );
+    await Promise.all(notifications);
   }
 
   await repoStore.updateRepositoryLastSeenTag(repo.id, release.tag_name);
