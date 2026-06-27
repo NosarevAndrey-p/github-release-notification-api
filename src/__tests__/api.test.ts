@@ -1,7 +1,6 @@
 import request from 'supertest';
-import express, { Express } from 'express';
-import createApiRouter from '../routes/api.js';
-import { createErrorMiddleware } from '../middleware/errorMiddleware.js';
+import { Express } from 'express';
+import { createApp } from '../app.js';
 import { mock, mockReset } from 'jest-mock-extended';
 import { IRepositoryStore, ISubscriptionStore, Subscription } from '../types/database.js';
 import { IEmailService } from '../types/email.js';
@@ -18,14 +17,6 @@ describe('API Routes', () => {
   const mockCrypto = mock<UUIDProvider>();
   const mockLogger = mock<ILogger>();
 
-  const mockDeps = {
-    repoStore: mockDb,
-    subStore: mockDb,
-    githubService: mockGithubService,
-    emailService: mockEmailService,
-    crypto: mockCrypto,
-  };
-
   beforeEach(() => {
     mockReset(mockDb);
     mockReset(mockGithubService);
@@ -33,10 +24,14 @@ describe('API Routes', () => {
     mockReset(mockCrypto);
     mockReset(mockLogger);
 
-    app = express();
-    app.use(express.json());
-    app.use('/api', createApiRouter(mockDeps));
-    app.use(createErrorMiddleware(mockLogger));
+    app = createApp({
+      repoStore: mockDb,
+      subStore: mockDb,
+      githubService: mockGithubService,
+      emailService: mockEmailService,
+      logger: mockLogger,
+      crypto: mockCrypto,
+    });
   });
 
   describe('POST /api/subscribe', () => {

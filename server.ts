@@ -8,6 +8,7 @@ import { NodemailerTransporter } from './src/services/email/emailTransporter.js'
 import { EmailNotifier } from './src/services/email/emailNotifier.js';
 import { logger } from './src/services/loggerService.js';
 import { config } from './src/config/index.js';
+import crypto from 'crypto';
 
 await db.initSchema();
 
@@ -26,6 +27,7 @@ const app = createApp({
   githubService,
   emailService,
   logger,
+  crypto,
 });
 
 app.listen(config.app.port, () => {
