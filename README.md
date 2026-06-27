@@ -13,7 +13,7 @@ A monolithic REST API that lets users subscribe to email notifications whenever 
 - GitHub API validation on subscription (returns `404` if repo doesn't exist, `400` for bad format)
 - Graceful handling of GitHub API rate limiting (`429 Too Many Requests`)
 - Database migrations run automatically on startup
-- Supports both **PostgreSQL** (production) and **SQLite** (local/lightweight dev)
+- Uses **PostgreSQL** as the database
 - Fully containerized with Docker and Docker Compose
 
 ---
@@ -22,7 +22,7 @@ A monolithic REST API that lets users subscribe to email notifications whenever 
 
 - **Runtime:** Node.js (ESM)
 - **Framework:** Express 5
-- **Database:** PostgreSQL (via `pg`) or SQLite (via `better-sqlite3`)
+- **Database:** PostgreSQL (via `pg`)
 - **Email:** Nodemailer
 - **Testing:** Jest + Supertest
 - **Containerization:** Docker + Docker Compose
@@ -98,7 +98,7 @@ SCAN_INTERVAL=60000
 
 # SCAN_INTERVAL=60000
 
-# PostgreSQL connection settings (used when DB_CLIENT=pg)
+# PostgreSQL connection settings
 POSTGRES_USER=postgres
 POSTGRES_PASSWORD=postgres
 POSTGRES_DB=repo_subscriber
@@ -235,7 +235,3 @@ When a `429 Too Many Requests` response is received, the service logs the event 
 ## API Documentation
 
 The full Swagger specification is available in `swagger.yaml`. You can view it interactively at [https://editor.swagger.io/](https://editor.swagger.io/) by pasting the file contents.
- contents.
-  file contents.
- contents.
- 
