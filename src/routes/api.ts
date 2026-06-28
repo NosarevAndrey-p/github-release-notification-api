@@ -9,7 +9,7 @@ import { IRepositoryStore, ISubscriptionStore } from '../types/database.js';
 import { IEmailService } from '../types/email.js';
 import { IGitHubService } from '../types/github.js';
 import { ValidatorService } from '../services/validatorService.js';
-import { UUIDProvider } from '../types/subscription.js';
+import { UUIDProvider, SubscriptionResult } from '../types/subscription.js';
 
 interface ApiDeps {
   repoStore: IRepositoryStore;
@@ -18,6 +18,14 @@ interface ApiDeps {
   emailService: IEmailService;
   crypto: UUIDProvider;
 }
+
+const SUBSCRIPTION_MESSAGES = {
+  [SubscriptionResult.CREATED]: 'subscription successful, confirmation email sent',
+  [SubscriptionResult.RESENT]: 'confirmation email resent',
+  [SubscriptionResult.CONFIRMED]: 'subscription confirmed successfully',
+  [SubscriptionResult.ALREADY_CONFIRMED]: 'subscription already confirmed',
+  [SubscriptionResult.UNSUBSCRIBED]: 'unsubscribed successfully',
+} as const;
 
 function createApiRouter(deps: ApiDeps) {
   const apiRouter = express.Router();
@@ -28,7 +36,7 @@ function createApiRouter(deps: ApiDeps) {
     ValidatorService.validateRepo(repo);
 
     const result = await subscribeToRepo({ email, repo }, deps);
-    return res.status(200).json(result);
+    return res.status(200).json({ message: SUBSCRIPTION_MESSAGES[result.status] });
   });
 
   apiRouter.get('/confirm/:token', async (req, res) => {
@@ -36,7 +44,7 @@ function createApiRouter(deps: ApiDeps) {
     ValidatorService.validateToken(token);
 
     const result = await confirmSubscription(token, deps);
-    return res.status(200).json(result);
+    return res.status(200).json({ message: SUBSCRIPTION_MESSAGES[result.status] });
   });
 
   apiRouter.get('/unsubscribe/:token', async (req, res) => {
@@ -44,7 +52,7 @@ function createApiRouter(deps: ApiDeps) {
     ValidatorService.validateToken(token);
 
     const result = await unsubscribeFromRepo(token, deps);
-    return res.status(200).json(result);
+    return res.status(200).json({ message: SUBSCRIPTION_MESSAGES[result.status] });
   });
 
   apiRouter.get('/subscriptions', async (req, res) => {

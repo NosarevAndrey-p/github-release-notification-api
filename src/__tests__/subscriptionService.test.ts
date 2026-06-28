@@ -5,7 +5,7 @@ import {
   getSubscriptions,
 } from '../services/subscriptionService.js';
 import { RateLimitError, NotFoundError } from '../types/errors.js';
-import { SubscriptionDeps } from '../types/subscription.js';
+import { SubscriptionDeps, SubscriptionResult } from '../types/subscription.js';
 import { mock, mockReset } from 'jest-mock-extended';
 import { IRepositoryStore, ISubscriptionStore, Subscription } from '../types/database.js';
 import { IGitHubService } from '../types/github.js';
@@ -48,7 +48,7 @@ describe('subscriptionService', () => {
         mockDeps
       );
 
-      expect(result.message).toBe('subscription successful, confirmation email sent');
+      expect(result.status).toBe(SubscriptionResult.CREATED);
       expect(mockDb.getRepositoryByFullName).toHaveBeenCalledWith('owner/repo');
       expect(mockGithubService.fetchRepository).toHaveBeenCalledWith('owner/repo');
       expect(mockDb.createRepository).toHaveBeenCalledWith('owner/repo', 'v1.0');
@@ -121,7 +121,7 @@ describe('subscriptionService', () => {
         mockDeps
       );
 
-      expect(result.message).toBe('confirmation email resent');
+      expect(result.status).toBe(SubscriptionResult.RESENT);
       expect(mockEmailService.sendConfirmationEmail).toHaveBeenCalledWith(
         'test@example.com',
         'owner/repo',
@@ -137,7 +137,7 @@ describe('subscriptionService', () => {
 
       const result = await confirmSubscription('12345678-1234-1234-1234-123456789012', mockDeps);
 
-      expect(result.message).toBe('subscription confirmed successfully');
+      expect(result.status).toBe(SubscriptionResult.CONFIRMED);
       expect(mockDb.updateSubscriptionConfirmed).toHaveBeenCalledWith(1);
     });
 
@@ -154,7 +154,7 @@ describe('subscriptionService', () => {
 
       const result = await confirmSubscription('12345678-1234-1234-1234-123456789012', mockDeps);
 
-      expect(result.message).toBe('subscription already confirmed');
+      expect(result.status).toBe(SubscriptionResult.ALREADY_CONFIRMED);
       expect(mockDb.updateSubscriptionConfirmed).not.toHaveBeenCalled();
     });
   });
@@ -166,7 +166,7 @@ describe('subscriptionService', () => {
 
       const result = await unsubscribeFromRepo('12345678-1234-1234-1234-123456789012', mockDeps);
 
-      expect(result.message).toBe('unsubscribed successfully');
+      expect(result.status).toBe(SubscriptionResult.UNSUBSCRIBED);
       expect(mockDb.deleteSubscriptionById).toHaveBeenCalledWith(1);
       expect(mockDb.deleteRepositoryById).toHaveBeenCalledWith(1);
     });

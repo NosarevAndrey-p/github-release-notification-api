@@ -1,4 +1,4 @@
-import SubscriptionModel, { SubscriptionDeps } from '../types/subscription.js';
+import SubscriptionModel, { SubscriptionDeps, SubscriptionResult } from '../types/subscription.js';
 import { 
   NotFoundError, 
   ConflictError, 
@@ -26,7 +26,7 @@ export async function subscribeToRepo({ email, repo }: { email: string; repo: st
     }
 
     await deps.emailService.sendConfirmationEmail(email, repo, existing.confirm_token, existing.unsubscribe_token);
-    return { message: 'confirmation email resent' };
+    return { status: SubscriptionResult.RESENT };
   }
 
   const confirmToken = deps.crypto.randomUUID();
@@ -35,7 +35,7 @@ export async function subscribeToRepo({ email, repo }: { email: string; repo: st
   await deps.subStore.createSubscription(email, repoRow.id, confirmToken, unsubscribeToken);
   await deps.emailService.sendConfirmationEmail(email, repo, confirmToken, unsubscribeToken);
 
-  return { message: 'subscription successful, confirmation email sent' };
+  return { status: SubscriptionResult.CREATED };
 }
 
 export async function confirmSubscription(token: string, { subStore }: SubscriptionDeps) {
@@ -45,11 +45,11 @@ export async function confirmSubscription(token: string, { subStore }: Subscript
   }
 
   if (sub.confirmed === 1) {
-    return { message: 'subscription already confirmed' };
+    return { status: SubscriptionResult.ALREADY_CONFIRMED };
   }
 
   await subStore.updateSubscriptionConfirmed(sub.id);
-  return { message: 'subscription confirmed successfully' };
+  return { status: SubscriptionResult.CONFIRMED };
 }
 
 export async function unsubscribeFromRepo(token: string, { subStore, repoStore }: SubscriptionDeps) {
@@ -66,7 +66,7 @@ export async function unsubscribeFromRepo(token: string, { subStore, repoStore }
     await repoStore.deleteRepositoryById(repoId);
   }
 
-  return { message: 'unsubscribed successfully' };
+  return { status: SubscriptionResult.UNSUBSCRIBED };
 }
 
 export async function getSubscriptions(email: string, { subStore }: SubscriptionDeps) {

@@ -2,6 +2,14 @@ import { IRepositoryStore, ISubscriptionStore } from './database.js';
 import { IEmailService } from './email.js';
 import { IGitHubService } from './github.js';
 
+export enum SubscriptionResult {
+  CREATED = 'subscription.created',
+  RESENT = 'subscription.resent',
+  CONFIRMED = 'subscription.confirmed',
+  ALREADY_CONFIRMED = 'subscription.already_confirmed',
+  UNSUBSCRIBED = 'subscription.unsubscribed',
+}
+
 export interface UUIDProvider {
   randomUUID: () => string;
 }
