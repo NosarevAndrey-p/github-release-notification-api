@@ -10,10 +10,10 @@ const queries = {
   insertRepository: 'INSERT INTO repositories (full_name, last_seen_tag) VALUES ($1, $2) RETURNING id',
   getSubscriptionByEmailAndRepoId: 'SELECT * FROM subscriptions WHERE email = $1 AND repo_id = $2',
   insertSubscription: `INSERT INTO subscriptions (
-    email, repo_id, confirmed, confirm_token, unsubscribe_token
-  ) VALUES ($1, $2, 0, $3, $4) RETURNING id`,
+    email, repo_id, confirm_token, unsubscribe_token
+  ) VALUES ($1, $2, $3, $4) RETURNING id`,
   getSubscriptionByConfirmToken: 'SELECT * FROM subscriptions WHERE confirm_token = $1',
-  updateSubscriptionConfirmed: 'UPDATE subscriptions SET confirmed = 1 WHERE id = $1',
+  updateSubscriptionConfirmed: 'UPDATE subscriptions SET confirmed = true WHERE id = $1',
   getSubscriptionByUnsubscribeToken: 'SELECT * FROM subscriptions WHERE unsubscribe_token = $1',
   deleteSubscriptionById: 'DELETE FROM subscriptions WHERE id = $1',
   countSubscriptionsByRepoId: 'SELECT COUNT(*) AS count FROM subscriptions WHERE repo_id = $1',
@@ -29,9 +29,9 @@ const queries = {
   getConfirmedRepositories: `SELECT DISTINCT r.*
   FROM repositories r
   JOIN subscriptions s ON s.repo_id = r.id
-  WHERE s.confirmed = 1`,
+  WHERE s.confirmed = true`,
   getConfirmedSubscriptionsByRepoId: `SELECT * FROM subscriptions
-  WHERE repo_id = $1 AND confirmed = 1`,
+  WHERE repo_id = $1 AND confirmed = true`,
   updateRepositoryLastSeenTag: 'UPDATE repositories SET last_seen_tag = $1 WHERE id = $2',
 };
 
@@ -99,7 +99,7 @@ export default class PostgresDatabase implements IDatabaseClient {
       id: result.rows[0].id,
       email,
       repo_id: repoId,
-      confirmed: 0,
+      confirmed: false,
       confirm_token: confirmToken,
       unsubscribe_token: unsubscribeToken,
     };

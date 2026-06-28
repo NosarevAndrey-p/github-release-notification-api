@@ -85,7 +85,7 @@ describe('API Routes', () => {
     it('should return 409 for duplicate confirmed subscription', async () => {
       mockGithubService.fetchRepository.mockResolvedValue({ id: 123, full_name: 'owner/repo' });
       mockDb.getRepositoryByFullName.mockResolvedValue({ id: 1, full_name: 'owner/repo', last_seen_tag: null });
-      mockDb.getSubscriptionByEmailAndRepoId.mockResolvedValue({ id: 1, confirmed: 1 } as unknown as Subscription);
+      mockDb.getSubscriptionByEmailAndRepoId.mockResolvedValue({ id: 1, confirmed: true } as unknown as Subscription);
 
       const response = await request(app)
         .post('/api/subscribe')
@@ -100,7 +100,7 @@ describe('API Routes', () => {
       mockDb.getRepositoryByFullName.mockResolvedValue({ id: 1, full_name: 'owner/repo', last_seen_tag: null });
       mockDb.getSubscriptionByEmailAndRepoId.mockResolvedValue({
         id: 1,
-        confirmed: 0,
+        confirmed: false,
         confirm_token: 'token',
         unsubscribe_token: 'unsub'
       } as unknown as Subscription);
@@ -122,7 +122,7 @@ describe('API Routes', () => {
 
   describe('GET /api/confirm/:token', () => {
     it('should return 200 on successful confirmation', async () => {
-      mockDb.getSubscriptionByConfirmToken.mockResolvedValue({ id: 1, confirmed: 0 } as unknown as Subscription);
+      mockDb.getSubscriptionByConfirmToken.mockResolvedValue({ id: 1, confirmed: false } as unknown as Subscription);
 
       const response = await request(app).get('/api/confirm/12345678-1234-1234-1234-123456789012');
 
@@ -168,7 +168,7 @@ describe('API Routes', () => {
 
   describe('GET /api/subscriptions', () => {
     it('should return subscriptions for valid email', async () => {
-      const mockSubscriptions = [{ email: 'test@example.com', repo: 'owner/repo', confirmed: 0, last_seen_tag: null }];
+      const mockSubscriptions = [{ email: 'test@example.com', repo: 'owner/repo', confirmed: false, last_seen_tag: null }];
       mockDb.getSubscriptionsByEmail.mockResolvedValue(mockSubscriptions);
 
       const response = await request(app)

@@ -44,7 +44,7 @@ export async function confirmSubscription(token: string, { subStore }: Subscript
     throw new NotFoundError('Token not found');
   }
 
-  if (sub.confirmed === 1) {
+  if (sub.confirmed) {
     return { status: SubscriptionResult.ALREADY_CONFIRMED };
   }
 

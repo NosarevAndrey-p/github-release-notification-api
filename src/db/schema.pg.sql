@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS subscriptions (
   email TEXT NOT NULL,
   repo_id INTEGER NOT NULL,
 
-  confirmed INTEGER NOT NULL DEFAULT 0 CHECK (confirmed IN (0,1)),
+  confirmed BOOLEAN NOT NULL DEFAULT FALSE,
 
   confirm_token TEXT NOT NULL UNIQUE,
   unsubscribe_token TEXT NOT NULL UNIQUE,

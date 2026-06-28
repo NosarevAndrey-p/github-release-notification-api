@@ -95,7 +95,7 @@ describe('subscriptionService', () => {
     it('should throw ConflictError for duplicate confirmed subscription', async () => {
       mockGithubService.fetchRepository.mockResolvedValue({ id: 123, full_name: 'owner/repo' });
       mockDb.getRepositoryByFullName.mockResolvedValue({ id: 1, full_name: 'owner/repo', last_seen_tag: null });
-      mockDb.getSubscriptionByEmailAndRepoId.mockResolvedValue({ id: 1, confirmed: 1 } as unknown as Subscription);
+      mockDb.getSubscriptionByEmailAndRepoId.mockResolvedValue({ id: 1, confirmed: true } as unknown as Subscription);
 
       await expect(
         subscribeToRepo(
@@ -110,7 +110,7 @@ describe('subscriptionService', () => {
       mockDb.getRepositoryByFullName.mockResolvedValue({ id: 1, full_name: 'owner/repo', last_seen_tag: null });
       mockDb.getSubscriptionByEmailAndRepoId.mockResolvedValue({
         id: 1,
-        confirmed: 0,
+        confirmed: false,
         confirm_token: 'token',
         unsubscribe_token: 'unsub'
       } as unknown as Subscription);
@@ -133,7 +133,7 @@ describe('subscriptionService', () => {
 
   describe('confirmSubscription', () => {
     it('should confirm subscription successfully', async () => {
-      mockDb.getSubscriptionByConfirmToken.mockResolvedValue({ id: 1, confirmed: 0 } as unknown as Subscription);
+      mockDb.getSubscriptionByConfirmToken.mockResolvedValue({ id: 1, confirmed: false } as unknown as Subscription);
 
       const result = await confirmSubscription('12345678-1234-1234-1234-123456789012', mockDeps);
 
@@ -150,7 +150,7 @@ describe('subscriptionService', () => {
     });
 
     it('should return already confirmed message', async () => {
-      mockDb.getSubscriptionByConfirmToken.mockResolvedValue({ id: 1, confirmed: 1 } as unknown as Subscription);
+      mockDb.getSubscriptionByConfirmToken.mockResolvedValue({ id: 1, confirmed: true } as unknown as Subscription);
 
       const result = await confirmSubscription('12345678-1234-1234-1234-123456789012', mockDeps);
 
@@ -182,7 +182,7 @@ describe('subscriptionService', () => {
 
   describe('getSubscriptions', () => {
     it('should return subscriptions for valid email', async () => {
-      const mockSubscriptions = [{ email: 'test@example.com', repo: 'owner/repo', confirmed: 1, last_seen_tag: null }];
+      const mockSubscriptions = [{ email: 'test@example.com', repo: 'owner/repo', confirmed: true, last_seen_tag: null }];
       mockDb.getSubscriptionsByEmail.mockResolvedValue(mockSubscriptions);
 
       const result = await getSubscriptions('test@example.com', mockDeps);

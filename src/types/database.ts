@@ -8,7 +8,7 @@ export interface Subscription {
   id: number;
   email: string;
   repo_id: number;
-  confirmed: number;
+  confirmed: boolean;
   confirm_token: string;
   unsubscribe_token: string;
 }
@@ -16,13 +16,12 @@ export interface Subscription {
 export interface UserSubscription {
   email: string;
   repo: string;
-  confirmed: number;
+  confirmed: boolean;
   last_seen_tag: string | null;
 }
 
 export interface DatabaseResult {
   rowCount?: number | null;
-  lastInsertRowid?: number | bigint;
   rows?: unknown[];
 }
 

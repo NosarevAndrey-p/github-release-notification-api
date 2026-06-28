@@ -31,12 +31,12 @@ export default class SubscriptionModel {
   constructor(data: {
     email: string;
     repo: string;
-    confirmed: number | boolean;
+    confirmed: boolean;
     last_seen_tag: string | null;
   }) {
     this.email = data.email;
     this.repo = data.repo;
-    this.confirmed = Boolean(data.confirmed);
+    this.confirmed = data.confirmed;
     this.last_seen_tag = data.last_seen_tag;
   }
 }

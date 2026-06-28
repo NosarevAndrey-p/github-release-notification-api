@@ -6,7 +6,10 @@ import {
 } from '../types/github.js';
 import { NotFoundError, RateLimitError, ServiceError } from '../types/errors.js';
 
-const GITHUB_API = new URL(process.env.GITHUB_API_URL || 'https://api.github.com');
+const GITHUB_API = (() => {
+  const apiUrl = process.env.GITHUB_API_URL || 'https://api.github.com';
+  return new URL(apiUrl.endsWith('/') ? apiUrl : `${apiUrl}/`);
+})();
 
 const GITHUB_HEADERS: Record<string, string> = (() => {
   const headers: Record<string, string> = {
@@ -21,7 +24,8 @@ const GITHUB_HEADERS: Record<string, string> = (() => {
 })();
 
 export const githubRequest: GithubRequest = async (path: string) => {
-  const url = new URL(path, GITHUB_API);
+  const cleanPath = path.replace(/^\//, '');
+  const url = new URL(cleanPath, GITHUB_API);
   const res = await fetch(url, { headers: GITHUB_HEADERS });
 
   if (res.status === 429 || res.status === 403) {
