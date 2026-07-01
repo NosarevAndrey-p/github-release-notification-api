@@ -1,5 +1,5 @@
-import { EmailService } from '../services/email/emailService.js';
-import { EmailDeps, IEmailTransporter, ITemplateRenderer } from '../types/email.js';
+import { EmailService } from '../../src/services/email/emailService.js';
+import { EmailDeps, IEmailTransporter, ITemplateRenderer } from '../../src/types/email.js';
 import { mock, mockReset } from 'jest-mock-extended';
 
 describe('EmailService', () => {

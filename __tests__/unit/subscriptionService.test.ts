@@ -3,14 +3,14 @@ import {
   confirmSubscription,
   unsubscribeFromRepo,
   getSubscriptions,
-} from '../services/subscriptionService.js';
-import { RateLimitError, NotFoundError } from '../types/errors.js';
-import { SubscriptionDeps, SubscriptionResult } from '../types/subscription.js';
+} from '../../src/services/subscriptionService.js';
+import { RateLimitError, NotFoundError } from '../../src/types/errors.js';
+import { SubscriptionDeps, SubscriptionResult } from '../../src/types/subscription.js';
 import { mock, mockReset } from 'jest-mock-extended';
-import { IRepositoryStore, ISubscriptionStore, Subscription } from '../types/database.js';
-import { IGitHubService } from '../types/github.js';
-import { IEmailService } from '../types/email.js';
-import { UUIDProvider } from '../types/subscription.js';
+import { IRepositoryStore, ISubscriptionStore, Subscription } from '../../src/types/database.js';
+import { IGitHubService } from '../../src/types/github.js';
+import { IEmailService } from '../../src/types/email.js';
+import { UUIDProvider } from '../../src/types/subscription.js';
 
 describe('subscriptionService', () => {
   const mockDb = mock<IRepositoryStore & ISubscriptionStore>();

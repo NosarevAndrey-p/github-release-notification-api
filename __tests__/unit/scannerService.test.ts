@@ -1,11 +1,11 @@
 import { jest } from '@jest/globals';
-import { scan, ScannerDeps } from '../services/scannerService.js';
-import { RateLimitError } from '../types/errors.js';
+import { scan, ScannerDeps } from '../../src/services/scannerService.js';
+import { RateLimitError } from '../../src/types/errors.js';
 import { mock, mockReset } from 'jest-mock-extended';
-import { IRepositoryStore, ISubscriptionStore, Subscription } from '../types/database.js';
-import { IGitHubService } from '../types/github.js';
-import { IEmailService } from '../types/email.js';
-import { ILogger } from '../types/logger.js';
+import { IRepositoryStore, ISubscriptionStore, Subscription } from '../../src/types/database.js';
+import { IGitHubService } from '../../src/types/github.js';
+import { IEmailService } from '../../src/types/email.js';
+import { ILogger } from '../../src/types/logger.js';
 
 describe('scannerService', () => {
   const mockDb = mock<IRepositoryStore & ISubscriptionStore>();

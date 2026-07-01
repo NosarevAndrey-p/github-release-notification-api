@@ -1,12 +1,12 @@
 import request from 'supertest';
 import { Express } from 'express';
-import { createApp } from '../app.js';
+import { createApp } from '../../src/app.js';
 import { mock, mockReset } from 'jest-mock-extended';
-import { IRepositoryStore, ISubscriptionStore, Subscription } from '../types/database.js';
-import { IEmailService } from '../types/email.js';
-import { IGitHubService } from '../types/github.js';
-import { UUIDProvider } from '../types/subscription.js';
-import { ILogger } from '../types/logger.js';
+import { IRepositoryStore, ISubscriptionStore, Subscription } from '../../src/types/database.js';
+import { IEmailService } from '../../src/types/email.js';
+import { IGitHubService } from '../../src/types/github.js';
+import { UUIDProvider } from '../../src/types/subscription.js';
+import { ILogger } from '../../src/types/logger.js';
 
 describe('API Routes', () => {
   let app: Express;
@@ -71,7 +71,7 @@ describe('API Routes', () => {
     });
 
     it('should return 404 for non-existent repo', async () => {
-      const { NotFoundError } = await import('../types/errors.js');
+      const { NotFoundError } = await import('../../src/types/errors.js');
       mockGithubService.fetchRepository.mockRejectedValue(new NotFoundError('repository not found'));
 
       const response = await request(app)
