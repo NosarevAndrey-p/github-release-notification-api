@@ -6,6 +6,7 @@ A monolithic REST API that lets users subscribe to email notifications whenever 
 
 ## Features
 
+- **Web Dashboard:** A clean, responsive dark-themed user interface to manage subscriptions, view statuses, and add new repos directly from your browser
 - Subscribe an email address to release notifications for any public GitHub repository
 - Email confirmation flow — subscriptions are activated only after confirmation
 - Background scanner that periodically polls GitHub for new releases and sends email alerts
@@ -26,6 +27,19 @@ A monolithic REST API that lets users subscribe to email notifications whenever 
 - **Email:** Nodemailer
 - **Testing:** Jest + Supertest
 - **Containerization:** Docker + Docker Compose
+
+---
+
+## Web Dashboard
+
+The service serves a built-in Single Page Application (SPA) dashboard at the root URL:
+`http://localhost:3000/` (or the configured `PORT`).
+
+It allows you to:
+- Access your subscription dashboard by entering your email.
+- View all active and pending subscriptions along with their verification status and latest release tags.
+- Subscribe to new repositories by entering their name (`owner/repo`) or pasting their full URL.
+- Refresh the dashboard data manually on demand.
 
 ---
 
@@ -101,10 +115,9 @@ SCAN_INTERVAL=60000
 # PostgreSQL connection settings
 POSTGRES_USER=postgres
 POSTGRES_PASSWORD=postgres
+POSTGRES_HOST=localhost
+POSTGRES_PORT=5433
 POSTGRES_DB=repo_subscriber
-
-# Full connection URL (used by the app; Docker sets this automatically)
-DATABASE_URL=postgresql://postgres:postgres@db:5432/repo_subscriber
 ```
 
 ### Gmail SMTP Notes
@@ -197,11 +210,12 @@ docker-compose down -v
 
 ## Running Tests
 
-```bash
-npm test
-```
+For detailed, step-by-step instructions on running unit tests, integration tests, and Playwright E2E tests, please refer to the [testing.md](testing.md) guide.
 
-This runs the full Jest test suite with coverage reporting. Tests cover the core business logic in `services/` and route handlers.
+Quick command to run all test suites (Unit, Integration, and E2E) sequentially with automated container setup:
+```bash
+npm run test:all
+```
 
 ---
 
