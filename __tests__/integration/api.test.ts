@@ -9,6 +9,7 @@ import { ILogger } from '../../src/types/logger.js';
 import db from '../../src/db/database.js';
 import pg from 'pg';
 
+// Test database helpers
 async function seedRepository(fullName = 'owner/repo', lastSeenTag: string | null = null) {
   return await db.createRepository(fullName, lastSeenTag);
 }
@@ -99,6 +100,15 @@ describe('API Routes (Integration)', () => {
       expect(response.body.error).toBe('email is required');
     });
 
+    it('should return 400 for missing repo', async () => {
+      const response = await request(app)
+        .post('/api/subscribe')
+        .send({ email: 'test@example.com' });
+
+      expect(response.status).toBe(400);
+      expect(response.body.error).toBe('repo is required');
+    });
+
     it('should return 400 for invalid repo format', async () => {
       const response = await request(app)
         .post('/api/subscribe')
@@ -182,6 +192,19 @@ describe('API Routes (Integration)', () => {
       expect(result.rows[0].confirmed).toBe(true);
     });
 
+    it('should return 200 and already confirmed message if subscription is already confirmed', async () => {
+      // 1. Setup database
+      const repo = await seedRepository();
+      const sub = await seedSubscription({ repoId: repo.id });
+      await db.updateSubscriptionConfirmed(sub.id);
+
+      // 2. Call endpoint
+      const response = await request(app).get('/api/confirm/12345678-1234-1234-1234-123456789012');
+
+      expect(response.status).toBe(200);
+      expect(response.body.message).toBe('subscription already confirmed');
+    });
+
     it('should return 400 for invalid token', async () => {
       const response = await request(app).get('/api/confirm/invalid');
 
@@ -217,11 +240,52 @@ describe('API Routes (Integration)', () => {
       expect(Number(repos.rows[0].count)).toBe(0);
     });
 
+    it('should unsubscribe successfully but keep repository if other subscriptions remain', async () => {
+      // 1. Setup database with 2 subscriptions for the same repo
+      const repo = await seedRepository();
+      
+      const sub1 = await seedSubscription({ 
+        email: 'user1@example.com', 
+        repoId: repo.id, 
+        confirmToken: '12345678-1234-1234-1234-123456789011', 
+        unsubscribeToken: '22345678-1234-1234-1234-123456789011' 
+      });
+      
+      await seedSubscription({ 
+        email: 'user2@example.com', 
+        repoId: repo.id, 
+        confirmToken: '12345678-1234-1234-1234-123456789012', 
+        unsubscribeToken: '22345678-1234-1234-1234-123456789012' 
+      });
+
+      // 2. Unsubscribe user1
+      const response = await request(app).get('/api/unsubscribe/22345678-1234-1234-1234-123456789011');
+
+      expect(response.status).toBe(200);
+      expect(response.body.message).toBe('unsubscribed successfully');
+
+      // Verify user1's sub is deleted, but user2's sub still exists
+      const subsResult = await testPool.query('SELECT email FROM subscriptions');
+      expect(subsResult.rows).toHaveLength(1);
+      expect(subsResult.rows[0].email).toBe('user2@example.com');
+
+      // Verify repository is NOT deleted because user2 is still active
+      const reposResult = await testPool.query('SELECT COUNT(*) FROM repositories');
+      expect(Number(reposResult.rows[0].count)).toBe(1);
+    });
+
     it('should return 400 for invalid token', async () => {
       const response = await request(app).get('/api/unsubscribe/invalid');
 
       expect(response.status).toBe(400);
       expect(response.body.error).toBe('invalid token');
+    });
+
+    it('should return 404 for non-existent unsubscribe token', async () => {
+      const response = await request(app).get('/api/unsubscribe/22345678-1234-1234-1234-123456789000');
+
+      expect(response.status).toBe(404);
+      expect(response.body.error).toBe('Token not found');
     });
   });
 
@@ -243,11 +307,29 @@ describe('API Routes (Integration)', () => {
       ]);
     });
 
+    it('should return empty array for email with no subscriptions', async () => {
+      const response = await request(app)
+        .get('/api/subscriptions')
+        .query({ email: 'nosubs@example.com' });
+
+      expect(response.status).toBe(200);
+      expect(response.body).toEqual([]);
+    });
+
     it('should return 400 for missing email', async () => {
       const response = await request(app).get('/api/subscriptions');
 
       expect(response.status).toBe(400);
       expect(response.body.error).toBe('email is required');
+    });
+
+    it('should return 400 for invalid email format', async () => {
+      const response = await request(app)
+        .get('/api/subscriptions')
+        .query({ email: 'invalid-email' });
+
+      expect(response.status).toBe(400);
+      expect(response.body.error).toBe('invalid email format');
     });
   });
 });
