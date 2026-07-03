@@ -1,5 +1,7 @@
 import { execSync } from 'child_process';
 import path from 'path';
+import fs from 'fs';
+import pg from 'pg';
 
 export default async function globalSetup() {
   console.info('\n[Jest Global Setup] Starting test database container...');
@@ -11,17 +13,18 @@ export default async function globalSetup() {
   
   console.info('[Jest Global Setup] Database is ready.');
 
-  // Set the environment variable for schema initialization
   const dbUrl = 'postgresql://postgres:postgres@localhost:5434/repo_subscriber_test';
-  process.env.DATABASE_URL = dbUrl;
-  process.env.DB_SCHEMA_PATH = path.join(process.cwd(), 'src', 'db', 'schema.pg.sql');
+  const schemaPath = path.join(process.cwd(), 'src', 'db', 'schema.pg.sql');
 
   console.info('[Jest Global Setup] Initializing database schema...');
   
-  // Import the database client and initialize the schema
-  const { default: db } = await import('../../src/db/database.js');
-  await db.initSchema();
-  await db.close();
+  // Use raw pg client to initialize the schema without loading app files
+  const client = new pg.Client({ connectionString: dbUrl });
+  await client.connect();
+  
+  const schema = fs.readFileSync(schemaPath, 'utf-8');
+  await client.query(schema);
+  await client.end();
 
-  console.info('[Jest Global Setup] Schema initialized successfully. Connection pool closed.');
+  console.info('[Jest Global Setup] Schema initialized successfully.');
 }

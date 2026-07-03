@@ -2,6 +2,18 @@ import 'dotenv/config';
 import path from 'path';
 import { Config } from '../types/config.js';
 
+const getDatabaseUrl = (): string => {
+  if (process.env.DATABASE_URL) {
+    return process.env.DATABASE_URL;
+  }
+  const user = process.env.POSTGRES_USER || 'postgres';
+  const password = process.env.POSTGRES_PASSWORD || 'postgres';
+  const host = process.env.POSTGRES_HOST || 'localhost';
+  const port = process.env.POSTGRES_PORT || '5432';
+  const db = process.env.POSTGRES_DB || 'repo_subscriber';
+  return `postgresql://${user}:${password}@${host}:${port}/${db}`;
+};
+
 export const config: Config = {
   app: {
     port: Number(process.env.PORT) || 3000,
@@ -15,7 +27,7 @@ export const config: Config = {
     pass: process.env.SMTP_PASS || '',
   },
   db: {
-    url: process.env.DATABASE_URL || '',
+    url: getDatabaseUrl(),
     schemaPath: process.env.DB_SCHEMA_PATH || path.join(process.cwd(), 'src', 'db', 'schema.pg.sql'),
   },
   github: {
