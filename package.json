@@ -13,11 +13,13 @@
     "lint": "eslint .",
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
     "test:integration": "node --experimental-vm-modules node_modules/jest/bin/jest.js --config jest.config.integration.js",
-    "test:all": "npm run test && npm run test:integration",
+    "test:e2e": "tsx __tests__/e2e/setupAndRun.ts",
+    "test:all": "npm run test && npm run test:integration && npm run test:e2e",
     "build-test": "npm run build && npm run test:all"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.61.1",
     "@types/ejs": "^3.1.5",
     "@types/express": "^5.0.6",
     "@types/jest": "^30.0.0",

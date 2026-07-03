@@ -1,4 +1,5 @@
 import express, { json, urlencoded } from 'express';
+import path from 'path';
 import createApiRouter from './routes/api.js';
 import { createErrorMiddleware } from './middleware/errorMiddleware.js';
 import { IRepositoryStore, ISubscriptionStore } from './types/database.js';
@@ -22,6 +23,9 @@ export function createApp(deps: AppDeps) {
   app.use(json());
   app.use(urlencoded({ extended: true }));
 
+  // Serve static files from /public
+  app.use(express.static(path.join(process.cwd(), 'public')));
+
   app.use('/api',
     createApiRouter({ 
       ...deps,
@@ -32,3 +36,4 @@ export function createApp(deps: AppDeps) {
 
   return app;
 }
+
