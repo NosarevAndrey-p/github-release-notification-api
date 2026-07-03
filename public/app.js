@@ -216,7 +216,7 @@ document.addEventListener('DOMContentLoaded', () => {
           }
         }
       }
-    } catch (e) {
+    } catch {
       // Fall through if URL parsing fails
     }
     

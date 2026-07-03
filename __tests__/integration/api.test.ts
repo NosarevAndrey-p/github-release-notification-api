@@ -244,7 +244,7 @@ describe('API Routes (Integration)', () => {
       // 1. Setup database with 2 subscriptions for the same repo
       const repo = await seedRepository();
       
-      const sub1 = await seedSubscription({ 
+      await seedSubscription({ 
         email: 'user1@example.com', 
         repoId: repo.id, 
         confirmToken: '12345678-1234-1234-1234-123456789011', 

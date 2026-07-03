@@ -68,7 +68,7 @@ class MockGithubServer {
   public start(): Promise<void> {
     return new Promise((resolve, reject) => {
       this.server = this.app.listen(this.port, () => {
-        console.log(`[Mock GitHub Server] Running on port ${this.port}`);
+        console.info(`[Mock GitHub Server] Running on port ${this.port}`);
         resolve();
       }).on('error', (err) => {
         reject(err);
@@ -80,7 +80,7 @@ class MockGithubServer {
     return new Promise((resolve) => {
       if (this.server) {
         this.server.close(() => {
-          console.log('[Mock GitHub Server] Stopped');
+          console.info('[Mock GitHub Server] Stopped');
           resolve();
         });
       } else {
