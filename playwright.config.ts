@@ -57,6 +57,8 @@ export default defineConfig({
       POSTGRES_HOST: '127.0.0.1',
       POSTGRES_PORT: '5434',
       POSTGRES_DB: 'repo_subscriber_test',
+      SMTP_HOST: '127.0.0.1',
+      SMTP_PORT: '1025',
       NODE_ENV: 'test',
       SCAN_INTERVAL: '1000', // Scan every 1 second for fast and natural E2E test scanning
       GITHUB_API_URL: 'http://127.0.0.1:3002', // Point to our mock GitHub server
