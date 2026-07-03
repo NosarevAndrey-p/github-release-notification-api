@@ -145,3 +145,7 @@ vite.config.ts.timestamp-*
 
 #database files
 #database.sqlite
+
+# Playwright E2E testing reports
+playwright-report/
+test-results/

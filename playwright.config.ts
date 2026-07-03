@@ -25,7 +25,7 @@ export default defineConfig({
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
     /* Base URL to use in actions like `await page.goto('/')`. */
-    baseURL: 'http://127.0.0.1:3001',
+    baseURL: 'http://127.0.0.1:8989',
 
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: 'on-first-retry',
@@ -45,13 +45,13 @@ export default defineConfig({
   /* Run your local dev server before starting the tests */
   webServer: {
     command: 'npx tsx server.ts',
-    url: 'http://127.0.0.1:3001',
+    url: 'http://127.0.0.1:8989/health',
     reuseExistingServer: !process.env.CI,
     timeout: 30 * 1000,
     stdout: 'pipe',
     stderr: 'pipe',
     env: {
-      PORT: '3001',
+      PORT: '8989',
       DATABASE_URL: 'postgresql://postgres:postgres@127.0.0.1:5434/repo_subscriber_test',
       NODE_ENV: 'test',
       SCAN_INTERVAL: '1000', // Scan every 1 second for fast and natural E2E test scanning

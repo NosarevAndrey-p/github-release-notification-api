@@ -23,6 +23,10 @@ export function createApp(deps: AppDeps) {
   app.use(json());
   app.use(urlencoded({ extended: true }));
 
+  app.get('/health', (req, res) => {
+    res.status(200).json({ status: 'ok' });
+  });
+
   // Serve static files from /public
   app.use(express.static(path.join(process.cwd(), 'public')));
 

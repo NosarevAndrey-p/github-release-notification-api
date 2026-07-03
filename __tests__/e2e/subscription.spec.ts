@@ -2,7 +2,6 @@ import { test, expect } from '@playwright/test';
 import pg from 'pg';
 import { mockGithub } from './mockGithubServer.js';
 
-// Setup database connection pool for E2E assertions
 const pool = new pg.Pool({
   connectionString: 'postgresql://postgres:postgres@127.0.0.1:5434/repo_subscriber_test',
 });
@@ -10,19 +9,16 @@ const pool = new pg.Pool({
 test.describe('E2E - Subscription Flow', () => {
   
   test.beforeAll(async () => {
-    // Start mock GitHub API server on port 3002
     await mockGithub.start();
   });
 
   test.afterAll(async () => {
-    // Stop mock GitHub API server and close DB pool
     await mockGithub.stop();
     await pool.end();
   });
 
   test.beforeEach(async () => {
     mockGithub.reset();
-    // Clean database before each test
     await pool.query('TRUNCATE TABLE subscriptions, repositories RESTART IDENTITY CASCADE');
   });
 
@@ -30,7 +26,6 @@ test.describe('E2E - Subscription Flow', () => {
     const email = 'e2e-tester@example.com';
     const repo = 'playwright/test-repo';
     
-    // Set up initial mock data for GitHub API
     mockGithub.setRepo(repo, 98765);
     mockGithub.setLatestRelease(repo, 'v1.0.0');
 
