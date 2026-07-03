@@ -16,7 +16,6 @@ const config = {
   },
   testMatch: [
     '<rootDir>/__tests__/unit/**/*.test.ts',
-    '<rootDir>/__tests__/integration/**/*.test.ts',
   ],
   modulePathIgnorePatterns: ['<rootDir>/dist/'],
   collectCoverage: true,

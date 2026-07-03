@@ -145,4 +145,8 @@ export default class PostgresDatabase implements IDatabaseClient {
   async updateRepositoryLastSeenTag(repoId: number, lastSeenTag: string | null): Promise<DatabaseResult> {
     return this.run(queries.updateRepositoryLastSeenTag, [lastSeenTag, repoId]);
   }
+
+  async close(): Promise<void> {
+    await this.pool.end();
+  }
 }

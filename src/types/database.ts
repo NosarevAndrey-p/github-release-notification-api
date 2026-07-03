@@ -52,4 +52,5 @@ export interface ISubscriptionStore {
 
 export interface IDatabaseClient extends IRepositoryStore, ISubscriptionStore {
   initSchema(): Promise<void> | void;
+  close(): Promise<void>;
 }

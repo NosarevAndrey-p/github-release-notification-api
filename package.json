@@ -12,7 +12,9 @@
     "build": "tsc -p tsconfig.build.json",
     "lint": "eslint .",
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
-    "build-test": "npm run build && npm test"
+    "test:integration": "node --experimental-vm-modules node_modules/jest/bin/jest.js --config jest.config.integration.js",
+    "test:all": "npm run test && npm run test:integration",
+    "build-test": "npm run build && npm run test:all"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
