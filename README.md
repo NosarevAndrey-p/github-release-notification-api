@@ -219,6 +219,21 @@ npm run test:all
 
 ---
 
+## Observability & Dashboards
+
+The service is fully instrumented with structured logging and metrics collection. When running the stack via Docker Compose, the following observability dashboards are available:
+
+- **Web Dashboard**: `http://localhost:3000/` (public user interface)
+- **Kibana (Logs)**: `http://localhost:5601`
+  - *Setup:* On first boot, go to **Discover**, click **Create data view**, name it `app-logs` with index pattern `app-logs` and `@timestamp` as the timestamp field, then click **Save**.
+- **Prometheus (Scraper targets)**: `http://localhost:9090`
+- **Grafana (Metrics Dashboard)**: `http://localhost:3001`
+  - *Credentials:* `admin` / `admin` (click **Skip** on change password prompt)
+  - *Dashboard:* Open the pre-provisioned **"Application RED Metrics"** dashboard to view request Rate, Errors, and Latency in real-time.
+- **Nginx Reverse Proxy Security**: The `/metrics` endpoint is protected and returns a `403 Forbidden` if accessed publically, but is scraped internally by Prometheus.
+
+---
+
 ## How It Works
 
 ### Subscription Flow
