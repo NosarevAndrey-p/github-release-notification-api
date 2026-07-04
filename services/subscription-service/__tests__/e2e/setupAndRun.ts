@@ -4,9 +4,9 @@ import pg from 'pg';
 import { migrate } from 'postgres-migrations';
 
 async function main() {
-  const composePath = path.join(process.cwd(), 'docker-compose.test.yml');
+  const composePath = path.resolve(__dirname, '../../../../docker-compose.test.yml');
   const dbUrl = 'postgresql://postgres:postgres@127.0.0.1:5434/repo_subscriber_test';
-  const migrationsDirectory = path.join(process.cwd(), 'src', 'db', 'migrations');
+  const migrationsDirectory = path.resolve(__dirname, '../../src/db/migrations');
 
   try {
     console.info('\n[E2E Setup] Starting test database container...');

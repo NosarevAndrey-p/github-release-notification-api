@@ -6,14 +6,19 @@
   "author": "Andrii Nosariev",
   "type": "module",
   "main": "server.js",
+  "workspaces": [
+    "services/*"
+  ],
   "scripts": {
-    "dev": "tsx watch server.ts",
-    "start": "tsx server.ts",
-    "build": "tsc -p tsconfig.build.json",
-    "lint": "eslint .",
-    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
-    "test:integration": "node --experimental-vm-modules node_modules/jest/bin/jest.js --config jest.config.integration.js",
-    "test:e2e": "tsx __tests__/e2e/setupAndRun.ts",
+    "dev:subscription": "npm run dev -w services/subscription-service",
+    "dev:notification": "npm run dev -w services/notification-service",
+    "start:subscription": "npm run start -w services/subscription-service",
+    "start:notification": "npm run start -w services/notification-service",
+    "build": "npm run build --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
+    "test": "npm run test -w services/subscription-service",
+    "test:integration": "npm run test:integration -w services/subscription-service",
+    "test:e2e": "npm run test:e2e -w services/subscription-service",
     "test:all": "npm run test && npm run test:integration && npm run test:e2e",
     "build-test": "npm run build && npm run test:all"
   },
