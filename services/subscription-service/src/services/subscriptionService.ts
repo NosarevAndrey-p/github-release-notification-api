@@ -4,22 +4,27 @@ import {
   ConflictError, 
 } from '../types/errors.js';
 
-async function getOrCreateRepository(repo: string, { repoStore, githubService }: SubscriptionDeps) {
-  const repoRow = await repoStore.getRepositoryByFullName(repo);
-  if (repoRow) {
-    return repoRow;
-  }
-
-  await githubService.fetchRepository(repo);
-  const release = await githubService.fetchLatestRelease(repo);
-  
-  return await repoStore.createRepository(repo, release?.tag_name || null);
+async function fetchLatestTags(repos: string[], notificationServiceUrl: string): Promise<Record<string, string | null>> {
+  const tags: Record<string, string | null> = {};
+  const promises = repos.map(async (repo) => {
+    try {
+      const res = await fetch(`${notificationServiceUrl}/api/internal/repositories?repo=${encodeURIComponent(repo)}`);
+      if (res.ok) {
+        const data = await res.json() as { last_seen_tag: string | null };
+        tags[repo] = data.last_seen_tag;
+      } else {
+        tags[repo] = null;
+      }
+    } catch {
+      tags[repo] = null;
+    }
+  });
+  await Promise.all(promises);
+  return tags;
 }
 
 export async function subscribeToRepo({ email, repo }: { email: string; repo: string }, deps: SubscriptionDeps) {
-  const repoRow = await getOrCreateRepository(repo, deps);
-
-  const existing = await deps.subStore.getSubscriptionByEmailAndRepoId(email, repoRow.id);
+  const existing = await deps.subStore.getSubscriptionByEmailAndRepoName(email, repo);
   if (existing) {
     if (existing.confirmed) {
       throw new ConflictError('email already subscribed to this repository');
@@ -29,10 +34,30 @@ export async function subscribeToRepo({ email, repo }: { email: string; repo: st
     return { status: SubscriptionResult.RESENT };
   }
 
+  const notificationUrl = deps.notificationServiceUrl || 'http://localhost:3002';
+  try {
+    const res = await fetch(`${notificationUrl}/api/internal/repositories`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ repo_name: repo }),
+    });
+
+    if (res.status === 404) {
+      throw new NotFoundError('Repository not found on GitHub');
+    }
+
+    if (!res.ok) {
+      throw new Error(`Notification service returned ${res.status}`);
+    }
+  } catch (err) {
+    if (err instanceof NotFoundError) throw err;
+    throw new Error(`Failed to contact notification service: ${err instanceof Error ? err.message : String(err)}`);
+  }
+
   const confirmToken = deps.crypto.randomUUID();
   const unsubscribeToken = deps.crypto.randomUUID();
 
-  await deps.subStore.createSubscription(email, repoRow.id, confirmToken, unsubscribeToken);
+  await deps.subStore.createSubscription(email, repo, confirmToken, unsubscribeToken);
   await deps.emailService.sendConfirmationEmail(email, repo, confirmToken, unsubscribeToken);
 
   return { status: SubscriptionResult.CREATED };
@@ -52,24 +77,30 @@ export async function confirmSubscription(token: string, { subStore }: Subscript
   return { status: SubscriptionResult.CONFIRMED };
 }
 
-export async function unsubscribeFromRepo(token: string, { subStore, repoStore }: SubscriptionDeps) {
+export async function unsubscribeFromRepo(token: string, { subStore }: SubscriptionDeps) {
   const sub = await subStore.getSubscriptionByUnsubscribeToken(token);
   if (!sub) {
     throw new NotFoundError('Token not found');
   }
 
-  const repoId = sub.repo_id;
   await subStore.deleteSubscriptionById(sub.id);
-
-  const remaining = await subStore.countSubscriptionsByRepoId(repoId);
-  if (remaining === 0) {
-    await repoStore.deleteRepositoryById(repoId);
-  }
-
   return { status: SubscriptionResult.UNSUBSCRIBED };
 }
 
-export async function getSubscriptions(email: string, { subStore }: SubscriptionDeps) {
-  const rows = await subStore.getSubscriptionsByEmail(email);
-  return rows.map(row => new SubscriptionModel(row));
+export async function getSubscriptions(email: string, deps: SubscriptionDeps) {
+  const rows = await deps.subStore.getSubscriptionsByEmail(email);
+  if (rows.length === 0) {
+    return [];
+  }
+
+  const repos = Array.from(new Set(rows.map(row => row.repo)));
+  const notificationUrl = deps.notificationServiceUrl || 'http://localhost:3002';
+  const tags = await fetchLatestTags(repos, notificationUrl);
+
+  return rows.map(row => new SubscriptionModel({
+    email: row.email,
+    repo: row.repo,
+    confirmed: row.confirmed,
+    last_seen_tag: tags[row.repo] || null,
+  }));
 }

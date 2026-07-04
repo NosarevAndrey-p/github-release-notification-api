@@ -1,5 +1,6 @@
-import { ISubscriptionStore } from './database.js';
+import { IRepositoryStore, ISubscriptionStore } from './database.js';
 import { IEmailService } from './email.js';
+import { IGitHubService } from './github.js';
 
 export enum SubscriptionResult {
   CREATED = 'subscription.created',
@@ -14,10 +15,11 @@ export interface UUIDProvider {
 }
 
 export interface SubscriptionDeps {
+  repoStore: IRepositoryStore;
   subStore: ISubscriptionStore;
+  githubService: IGitHubService;
   emailService: IEmailService;
   crypto: UUIDProvider;
-  notificationServiceUrl?: string;
 }
 
 export default class SubscriptionModel {
@@ -38,3 +40,4 @@ export default class SubscriptionModel {
     this.last_seen_tag = data.last_seen_tag;
   }
 }
+

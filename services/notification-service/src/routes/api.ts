@@ -5,16 +5,18 @@ import {
   unsubscribeFromRepo,
   getSubscriptions,
 } from '../services/subscriptionService.js';
-import { ISubscriptionStore } from '../types/database.js';
+import { IRepositoryStore, ISubscriptionStore } from '../types/database.js';
 import { IEmailService } from '../types/email.js';
+import { IGitHubService } from '../types/github.js';
 import { ValidatorService } from '../services/validatorService.js';
 import { UUIDProvider, SubscriptionResult } from '../types/subscription.js';
 
 interface ApiDeps {
+  repoStore: IRepositoryStore;
   subStore: ISubscriptionStore;
+  githubService: IGitHubService;
   emailService: IEmailService;
   crypto: UUIDProvider;
-  notificationServiceUrl?: string;
 }
 
 const SUBSCRIPTION_MESSAGES = {
@@ -58,15 +60,6 @@ function createApiRouter(deps: ApiDeps) {
     ValidatorService.validateEmail(email);
 
     const result = await getSubscriptions(email, deps);
-    return res.status(200).json(result);
-  });
-
-  // Internal API for Notification Service (Scanner)
-  apiRouter.get('/internal/subscriptions', async (req, res) => {
-    const repo = req.query.repo as string;
-    ValidatorService.validateRepo(repo);
-
-    const result = await deps.subStore.getConfirmedSubscriptionsByRepoName(repo);
     return res.status(200).json(result);
   });
 

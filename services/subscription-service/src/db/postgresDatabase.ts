@@ -1,38 +1,27 @@
 import pg from 'pg';
 import { migrate } from 'postgres-migrations';
-import { IDatabaseClient, Repository, Subscription, UserSubscription, DatabaseResult } from '../types/database.js';
+import { IDatabaseClient, Subscription, UserSubscriptionRow, ConfirmedSubscription, DatabaseResult } from '../types/database.js';
 import { DatabaseConfig } from '../types/config.js';
 
 const { Pool } = pg;
 
 const queries = {
-  getRepositoryByFullName: 'SELECT * FROM repositories WHERE full_name = $1',
-  insertRepository: 'INSERT INTO repositories (full_name, last_seen_tag) VALUES ($1, $2) RETURNING id',
-  getSubscriptionByEmailAndRepoId: 'SELECT * FROM subscriptions WHERE email = $1 AND repo_id = $2',
+  getSubscriptionByEmailAndRepoName: 'SELECT * FROM subscriptions WHERE email = $1 AND repo_name = $2',
   insertSubscription: `INSERT INTO subscriptions (
-    email, repo_id, confirm_token, unsubscribe_token
+    email, repo_name, confirm_token, unsubscribe_token
   ) VALUES ($1, $2, $3, $4) RETURNING id`,
   getSubscriptionByConfirmToken: 'SELECT * FROM subscriptions WHERE confirm_token = $1',
   updateSubscriptionConfirmed: 'UPDATE subscriptions SET confirmed = true WHERE id = $1',
   getSubscriptionByUnsubscribeToken: 'SELECT * FROM subscriptions WHERE unsubscribe_token = $1',
   deleteSubscriptionById: 'DELETE FROM subscriptions WHERE id = $1',
-  countSubscriptionsByRepoId: 'SELECT COUNT(*) AS count FROM subscriptions WHERE repo_id = $1',
-  deleteRepositoryById: 'DELETE FROM repositories WHERE id = $1',
+  countSubscriptionsByRepoName: 'SELECT COUNT(*) AS count FROM subscriptions WHERE repo_name = $1',
   getSubscriptionsByEmail: `SELECT 
-    s.email,
-    r.full_name AS repo,
-    s.confirmed,
-    r.last_seen_tag
-  FROM subscriptions s
-  JOIN repositories r ON s.repo_id = r.id
-  WHERE s.email = $1`,
-  getConfirmedRepositories: `SELECT DISTINCT r.*
-  FROM repositories r
-  JOIN subscriptions s ON s.repo_id = r.id
-  WHERE s.confirmed = true`,
-  getConfirmedSubscriptionsByRepoId: `SELECT * FROM subscriptions
-  WHERE repo_id = $1 AND confirmed = true`,
-  updateRepositoryLastSeenTag: 'UPDATE repositories SET last_seen_tag = $1 WHERE id = $2',
+    email,
+    repo_name AS repo,
+    confirmed
+  FROM subscriptions
+  WHERE email = $1`,
+  getConfirmedSubscriptionsByRepoName: 'SELECT email, unsubscribe_token FROM subscriptions WHERE repo_name = $1 AND confirmed = true',
 };
 
 export default class PostgresDatabase implements IDatabaseClient {
@@ -74,29 +63,16 @@ export default class PostgresDatabase implements IDatabaseClient {
     };
   }
 
-  async getRepositoryByFullName(fullName: string): Promise<Repository | null> {
-    return this.get<Repository>(queries.getRepositoryByFullName, [fullName]);
+  async getSubscriptionByEmailAndRepoName(email: string, repoName: string): Promise<Subscription | null> {
+    return this.get<Subscription>(queries.getSubscriptionByEmailAndRepoName, [email, repoName]);
   }
 
-  async createRepository(fullName: string, lastSeenTag: string | null): Promise<Repository> {
-    const result = await this.query(queries.insertRepository, [fullName, lastSeenTag]);
-    return {
-      id: result.rows[0].id,
-      full_name: fullName,
-      last_seen_tag: lastSeenTag,
-    };
-  }
-
-  async getSubscriptionByEmailAndRepoId(email: string, repoId: number): Promise<Subscription | null> {
-    return this.get<Subscription>(queries.getSubscriptionByEmailAndRepoId, [email, repoId]);
-  }
-
-  async createSubscription(email: string, repoId: number, confirmToken: string, unsubscribeToken: string): Promise<Subscription> {
-    const result = await this.query(queries.insertSubscription, [email, repoId, confirmToken, unsubscribeToken]);
+  async createSubscription(email: string, repoName: string, confirmToken: string, unsubscribeToken: string): Promise<Subscription> {
+    const result = await this.query(queries.insertSubscription, [email, repoName, confirmToken, unsubscribeToken]);
     return {
       id: result.rows[0].id,
       email,
-      repo_id: repoId,
+      repo_name: repoName,
       confirmed: false,
       confirm_token: confirmToken,
       unsubscribe_token: unsubscribeToken,
@@ -119,29 +95,17 @@ export default class PostgresDatabase implements IDatabaseClient {
     return this.run(queries.deleteSubscriptionById, [id]);
   }
 
-  async countSubscriptionsByRepoId(repoId: number): Promise<number> {
-    const row = await this.get<{ count: string }>(queries.countSubscriptionsByRepoId, [repoId]);
+  async countSubscriptionsByRepoName(repoName: string): Promise<number> {
+    const row = await this.get<{ count: string }>(queries.countSubscriptionsByRepoName, [repoName]);
     return Number(row?.count ?? 0);
   }
 
-  async deleteRepositoryById(id: number): Promise<DatabaseResult> {
-    return this.run(queries.deleteRepositoryById, [id]);
+  async getSubscriptionsByEmail(email: string): Promise<UserSubscriptionRow[]> {
+    return this.all<UserSubscriptionRow>(queries.getSubscriptionsByEmail, [email]);
   }
 
-  async getSubscriptionsByEmail(email: string): Promise<UserSubscription[]> {
-    return this.all<UserSubscription>(queries.getSubscriptionsByEmail, [email]);
-  }
-
-  async getConfirmedRepositories(): Promise<Repository[]> {
-    return this.all<Repository>(queries.getConfirmedRepositories);
-  }
-
-  async getConfirmedSubscriptionsByRepoId(repoId: number): Promise<Subscription[]> {
-    return this.all<Subscription>(queries.getConfirmedSubscriptionsByRepoId, [repoId]);
-  }
-
-  async updateRepositoryLastSeenTag(repoId: number, lastSeenTag: string | null): Promise<DatabaseResult> {
-    return this.run(queries.updateRepositoryLastSeenTag, [lastSeenTag, repoId]);
+  async getConfirmedSubscriptionsByRepoName(repoName: string): Promise<ConfirmedSubscription[]> {
+    return this.all<ConfirmedSubscription>(queries.getConfirmedSubscriptionsByRepoName, [repoName]);
   }
 
   async close(): Promise<void> {

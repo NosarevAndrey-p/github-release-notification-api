@@ -1,23 +1,25 @@
-export interface Repository {
-  id: number;
-  full_name: string;
-  last_seen_tag: string | null;
-}
-
 export interface Subscription {
   id: number;
   email: string;
-  repo_id: number;
+  repo_name: string;
   confirmed: boolean;
   confirm_token: string;
   unsubscribe_token: string;
 }
 
-export interface UserSubscription {
+export interface UserSubscriptionRow {
   email: string;
   repo: string;
   confirmed: boolean;
+}
+
+export interface UserSubscription extends UserSubscriptionRow {
   last_seen_tag: string | null;
+}
+
+export interface ConfirmedSubscription {
+  email: string;
+  unsubscribe_token: string;
 }
 
 export interface DatabaseResult {
@@ -25,19 +27,11 @@ export interface DatabaseResult {
   rows?: unknown[];
 }
 
-export interface IRepositoryStore {
-  getRepositoryByFullName(fullName: string): Promise<Repository | null>;
-  createRepository(fullName: string, lastSeenTag: string | null): Promise<Repository>;
-  getConfirmedRepositories(): Promise<Repository[]>;
-  updateRepositoryLastSeenTag(repoId: number, lastSeenTag: string | null): Promise<DatabaseResult>;
-  deleteRepositoryById(id: number): Promise<DatabaseResult>;
-}
-
 export interface ISubscriptionStore {
-  getSubscriptionByEmailAndRepoId(email: string, repoId: number): Promise<Subscription | null>;
+  getSubscriptionByEmailAndRepoName(email: string, repoName: string): Promise<Subscription | null>;
   createSubscription(
     email: string,
-    repoId: number,
+    repoName: string,
     confirmToken: string,
     unsubscribeToken: string
   ): Promise<Subscription>;
@@ -45,12 +39,12 @@ export interface ISubscriptionStore {
   updateSubscriptionConfirmed(id: number): Promise<DatabaseResult>;
   getSubscriptionByUnsubscribeToken(token: string): Promise<Subscription | null>;
   deleteSubscriptionById(id: number): Promise<DatabaseResult>;
-  countSubscriptionsByRepoId(repoId: number): Promise<number>;
-  getSubscriptionsByEmail(email: string): Promise<UserSubscription[]>;
-  getConfirmedSubscriptionsByRepoId(repoId: number): Promise<Subscription[]>;
+  countSubscriptionsByRepoName(repoName: string): Promise<number>;
+  getSubscriptionsByEmail(email: string): Promise<UserSubscriptionRow[]>;
+  getConfirmedSubscriptionsByRepoName(repoName: string): Promise<ConfirmedSubscription[]>;
 }
 
-export interface IDatabaseClient extends IRepositoryStore, ISubscriptionStore {
+export interface IDatabaseClient extends ISubscriptionStore {
   initSchema(): Promise<void> | void;
   close(): Promise<void>;
 }
