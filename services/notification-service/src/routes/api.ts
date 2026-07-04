@@ -1,66 +1,58 @@
 import express from 'express';
-import {
-  subscribeToRepo,
-  confirmSubscription,
-  unsubscribeFromRepo,
-  getSubscriptions,
-} from '../services/subscriptionService.js';
-import { IRepositoryStore, ISubscriptionStore } from '../types/database.js';
-import { IEmailService } from '../types/email.js';
+import { IRepositoryStore } from '../types/database.js';
 import { IGitHubService } from '../types/github.js';
 import { ValidatorService } from '../services/validatorService.js';
-import { UUIDProvider, SubscriptionResult } from '../types/subscription.js';
 
 interface ApiDeps {
   repoStore: IRepositoryStore;
-  subStore: ISubscriptionStore;
   githubService: IGitHubService;
-  emailService: IEmailService;
-  crypto: UUIDProvider;
 }
-
-const SUBSCRIPTION_MESSAGES = {
-  [SubscriptionResult.CREATED]: 'subscription successful, confirmation email sent',
-  [SubscriptionResult.RESENT]: 'confirmation email resent',
-  [SubscriptionResult.CONFIRMED]: 'subscription confirmed successfully',
-  [SubscriptionResult.ALREADY_CONFIRMED]: 'subscription already confirmed',
-  [SubscriptionResult.UNSUBSCRIBED]: 'unsubscribed successfully',
-} as const;
 
 function createApiRouter(deps: ApiDeps) {
   const apiRouter = express.Router();
 
-  apiRouter.post('/subscribe', async (req, res) => {
-    const { email, repo } = req.body;
-    ValidatorService.validateEmail(email);
-    ValidatorService.validateRepo(repo);
+  // POST /api/internal/repositories
+  // Registers a repository if it doesn't exist, validating it against GitHub first
+  apiRouter.post('/internal/repositories', async (req, res, next) => {
+    try {
+      const { repo_name } = req.body;
+      ValidatorService.validateRepo(repo_name);
 
-    const result = await subscribeToRepo({ email, repo }, deps);
-    return res.status(200).json({ message: SUBSCRIPTION_MESSAGES[result.status] });
+      const existing = await deps.repoStore.getRepositoryByFullName(repo_name);
+      if (existing) {
+        return res.status(200).json(existing);
+      }
+
+      // Check existence and get latest release from GitHub
+      await deps.githubService.fetchRepository(repo_name);
+      const release = await deps.githubService.fetchLatestRelease(repo_name);
+
+      const created = await deps.repoStore.createRepository(repo_name, release?.tag_name || null);
+      return res.status(201).json(created);
+    } catch (err) {
+      next(err);
+    }
   });
 
-  apiRouter.get('/confirm/:token', async (req, res) => {
-    const { token } = req.params;
-    ValidatorService.validateToken(token);
+  // GET /api/internal/repositories
+  // Returns repository details (like last_seen_tag)
+  apiRouter.get('/internal/repositories', async (req, res, next) => {
+    try {
+      const repoName = req.query.repo as string;
+      ValidatorService.validateRepo(repoName);
 
-    const result = await confirmSubscription(token, deps);
-    return res.status(200).json({ message: SUBSCRIPTION_MESSAGES[result.status] });
-  });
+      const repo = await deps.repoStore.getRepositoryByFullName(repoName);
+      if (!repo) {
+        return res.status(404).json({ error: 'Repository not tracked' });
+      }
 
-  apiRouter.get('/unsubscribe/:token', async (req, res) => {
-    const { token } = req.params;
-    ValidatorService.validateToken(token);
-
-    const result = await unsubscribeFromRepo(token, deps);
-    return res.status(200).json({ message: SUBSCRIPTION_MESSAGES[result.status] });
-  });
-
-  apiRouter.get('/subscriptions', async (req, res) => {
-    const email = req.query.email as string;
-    ValidatorService.validateEmail(email);
-
-    const result = await getSubscriptions(email, deps);
-    return res.status(200).json(result);
+      return res.status(200).json({
+        repo_name: repo.full_name,
+        last_seen_tag: repo.last_seen_tag,
+      });
+    } catch (err) {
+      next(err);
+    }
   });
 
   return apiRouter;

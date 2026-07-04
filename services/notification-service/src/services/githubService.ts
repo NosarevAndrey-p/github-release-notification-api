@@ -1,46 +1,43 @@
 import { 
-  GithubRequest, 
   IGitHubService, 
   GithubRepoInfo, 
   GithubReleaseInfo 
 } from '../types/github.js';
 import { NotFoundError, RateLimitError, ServiceError } from '../types/errors.js';
-
-const GITHUB_API = (() => {
-  const apiUrl = process.env.GITHUB_API_URL || 'https://api.github.com';
-  return new URL(apiUrl.endsWith('/') ? apiUrl : `${apiUrl}/`);
-})();
-
-const GITHUB_HEADERS: Record<string, string> = (() => {
-  const headers: Record<string, string> = {
-    Accept: 'application/vnd.github+json',
-  };
-
-  if (process.env.GITHUB_TOKEN) {
-    headers.Authorization = `Bearer ${process.env.GITHUB_TOKEN}`;
-  }
-
-  return headers;
-})();
-
-export const githubRequest: GithubRequest = async (path: string) => {
-  const cleanPath = path.replace(/^\//, '');
-  const url = new URL(cleanPath, GITHUB_API);
-  const res = await fetch(url, { headers: GITHUB_HEADERS });
-
-  if (res.status === 429 || res.status === 403) {
-    throw new RateLimitError('github rate limit exceeded');
-  }
-
-  if (!res.ok && res.status !== 404) {
-    throw new ServiceError('github api error');
-  }
-
-  return res;
-};
+import { GithubConfig } from '../types/config.js';
+import { config } from '../config/index.js';
 
 export class GitHubService implements IGitHubService {
-  constructor(private request: GithubRequest) {}
+  private apiUrl: URL;
+  private headers: Record<string, string>;
+
+  constructor(githubConfig: GithubConfig) {
+    const url = githubConfig.apiUrl;
+    this.apiUrl = new URL(url.endsWith('/') ? url : `${url}/`);
+    this.headers = {
+      Accept: 'application/vnd.github+json',
+    };
+
+    if (githubConfig.token) {
+      this.headers.Authorization = `Bearer ${githubConfig.token}`;
+    }
+  }
+
+  private async request(path: string): Promise<Response> {
+    const cleanPath = path.replace(/^\//, '');
+    const url = new URL(cleanPath, this.apiUrl);
+    const res = await fetch(url, { headers: this.headers });
+
+    if (res.status === 429 || res.status === 403) {
+      throw new RateLimitError('github rate limit exceeded');
+    }
+
+    if (!res.ok && res.status !== 404) {
+      throw new ServiceError('github api error');
+    }
+
+    return res;
+  }
 
   async fetchRepository(repo: string): Promise<GithubRepoInfo> {
     const res = await this.request(`/repos/${repo}`);
@@ -67,5 +64,5 @@ export class GitHubService implements IGitHubService {
   }
 }
 
-const defaultGitHubService = new GitHubService(githubRequest);
+const defaultGitHubService = new GitHubService(config.github);
 export default defaultGitHubService;

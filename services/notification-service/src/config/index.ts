@@ -16,9 +16,10 @@ const getDatabaseUrl = (): string => {
 
 export const config: Config = {
   app: {
-    port: Number(process.env.PORT) || 3000,
+    port: Number(process.env.PORT) || 3002,
     scanInterval: Number(process.env.SCAN_INTERVAL) || 60000,
-    baseUrl: process.env.BASE_URL || 'http://localhost:3000',
+    baseUrl: process.env.BASE_URL || 'http://localhost:3002',
+    subscriptionServiceUrl: process.env.SUBSCRIPTION_SERVICE_URL || 'http://localhost:3000',
   },
   smtp: {
     host: process.env.SMTP_HOST || '',
@@ -29,5 +30,9 @@ export const config: Config = {
   db: {
     url: getDatabaseUrl(),
     migrationsDirectory: process.env.DB_MIGRATIONS_DIR || path.join(process.cwd(), 'src', 'db', 'migrations'),
+  },
+  github: {
+    apiUrl: process.env.GITHUB_API_URL || 'https://api.github.com',
+    token: process.env.GITHUB_TOKEN,
   },
 };
