@@ -1,10 +1,8 @@
 import client from 'prom-client';
 import { Request, Response, NextFunction } from 'express';
 
-// Enable default Node.js system and process metrics collection
 client.collectDefaultMetrics();
 
-// Define the Histogram for HTTP Request Duration (covers Rate, Errors, and Duration)
 export const httpRequestDuration = new client.Histogram({
   name: 'http_request_duration_seconds',
   help: 'Duration of HTTP requests in seconds',
@@ -13,7 +11,6 @@ export const httpRequestDuration = new client.Histogram({
 });
 
 export function metricsMiddleware(req: Request, res: Response, next: NextFunction) {
-  // Exclude scrape calls and health checks to keep metrics clean
   if (req.path === '/metrics' || req.path === '/health') {
     return next();
   }
@@ -21,7 +18,7 @@ export function metricsMiddleware(req: Request, res: Response, next: NextFunctio
   const start = performance.now();
 
   res.on('finish', () => {
-    const duration = (performance.now() - start) / 1000; // convert to seconds
+    const duration = (performance.now() - start) / 1000;
 
     // Normalize path to avoid high-cardinality tags (e.g., actual email strings or token UUIDs)
     let route = 'unknown_route';

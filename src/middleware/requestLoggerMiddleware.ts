@@ -2,7 +2,6 @@ import { Request, Response, NextFunction } from 'express';
 import { logger } from '../services/loggerService.js';
 
 export function requestLogger(req: Request, res: Response, next: NextFunction) {
-  // Exclude noise from health checks and metrics scraping
   if (req.path === '/health' || req.path === '/metrics') {
     return next();
   }
