@@ -1,210 +1,91 @@
-# GitHub Release Notification API
+# GitHub Release Notification System
 
-A monolithic REST API that lets users subscribe to email notifications whenever a new release is published on a chosen GitHub repository.
+A microservices-based system that allows users to subscribe to email notifications whenever a new release is published on a chosen GitHub repository. 
+
+The system is refactored from a monolith into two specialized microservices organized as a monorepo using npm workspaces.
 
 ---
 
 ## Features
 
-- **Web Dashboard:** A clean, responsive dark-themed user interface to manage subscriptions, view statuses, and add new repos directly from your browser
-- Subscribe an email address to release notifications for any public GitHub repository
-- Email confirmation flow — subscriptions are activated only after confirmation
-- Background scanner that periodically polls GitHub for new releases and sends email alerts
-- Per-repository `last_seen_tag` tracking — notifications are sent only for genuinely new releases
-- GitHub API validation on subscription (returns `404` if repo doesn't exist, `400` for bad format)
-- Graceful handling of GitHub API rate limiting (`429 Too Many Requests`)
-- Database migrations run automatically on startup
-- Uses **PostgreSQL** as the database
-- Fully containerized with Docker and Docker Compose
-
----
-
-## Tech Stack
-
-- **Runtime:** Node.js (ESM)
-- **Framework:** Express 5
-- **Database:** PostgreSQL (via `pg`)
-- **Email:** Nodemailer
-- **Testing:** Jest + Supertest
-- **Containerization:** Docker + Docker Compose
-
----
-
-## Web Dashboard
-
-The service serves a built-in Single Page Application (SPA) dashboard at the root URL:
-`http://localhost:3000/` (or the configured `PORT`).
-
-It allows you to:
-- Access your subscription dashboard by entering your email.
-- View all active and pending subscriptions along with their verification status and latest release tags.
-- Subscribe to new repositories by entering their name (`owner/repo`) or pasting their full URL.
-- Refresh the dashboard data manually on demand.
+- **Web Dashboard:** A clean, responsive dark-themed user interface to manage subscriptions, view statuses, and add new repos directly from your browser.
+- **Microservice Architecture:** Decoupled into `subscription-service` (User UI & API) and `notification-service` (Background polling and email notifications).
+- **Database-per-Service Isolation:** Separate databases (`subscription_db` and `notification_db`) run within a single Postgres container, ensuring schema isolation and logical autonomy.
+- **Inter-service REST Sync:** The two services communicate using direct internal REST HTTP endpoints.
+- **Self-Healing Scanner:** The background scanner deletes tracked repositories automatically if the `subscription-service` indicates that they have `0` active subscribers, halting redundant API polling.
+- **Robust Schema Migrations**: Runs separate programmatic database schema migrations on service start via `postgres-migrations`.
+- **Fully Containerized**: Packaged with Docker, Docker Compose, Nginx, prometheus, Fluent Bit, Elasticsearch, Kibana, and Grafana.
 
 ---
 
 ## Project Structure
 
+This project uses npm workspaces to organize components:
 ```
-├── routes/          # Express route definitions (subscribe, confirm, unsubscribe, subscriptions)
-├── services/        # Business logic (GitHub API, email sending, scanner)
-├── models/          # Database access layer
-├── db/              # Migration scripts and DB client setup
-├── lib/             # Utility helpers (token generation, validators, etc.)
-├── __tests__/       # Unit and integration tests
-├── app.js           # Express app setup
-├── server.js        # Entry point — runs migrations, starts server and scanner
-├── Dockerfile
-├── docker-compose.yml
-└── .env.example
+├── services/
+│   ├── subscription-service/   # Service A (UI, REST API, subscription_db)
+│   └── notification-service/   # Service B (Scanner, Emailer, notification_db)
+├── __tests__/
+│   └── e2e/                     # Global Playwright System E2E tests
+├── infrastructure/              # Nginx, Fluent Bit, Prometheus, Grafana, and DB configs
+├── docker-compose.yml           # Monorepo container orchestrator
+└── package.json                 # Monorepo root configuration
 ```
-
----
-
-## API Endpoints
-
-All endpoints are prefixed with `/api`. The full contract is defined in `swagger.yaml`.
-
-| Method | Path | Description |
-|--------|------|-------------|
-| `POST` | `/api/subscribe` | Subscribe an email to a GitHub repository's releases |
-| `GET` | `/api/confirm/:token` | Confirm subscription via emailed token |
-| `GET` | `/api/unsubscribe/:token` | Unsubscribe using token from notification emails |
-| `GET` | `/api/subscriptions?email=...` | List all active subscriptions for an email |
-
-### `POST /api/subscribe`
-
-**Body** (form-data or `application/x-www-form-urlencoded`):
-
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `email` | string | ✅ | Subscriber's email address |
-| `repo` | string | ✅ | GitHub repo in `owner/repo` format (e.g. `golang/go`) |
-
-**Responses:**
-
-- `200` — Subscribed successfully, confirmation email sent
-- `400` — Invalid input (malformed email or repo format)
-- `404` — Repository not found on GitHub
-- `409` — Email already subscribed to this repository
-
----
-
-## Environment Variables
-
-Copy `.env.example` to `.env` and fill in your values:
-
-```env
-# GitHub personal access token (optional but recommended)
-# Without token: 60 req/hour rate limit
-# With token: 5000 req/hour rate limit
-GITHUB_TOKEN=
-
-# SMTP settings for sending emails
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=587
-SMTP_USER=your@gmail.com
-SMTP_PASS=your_app_password
-
-# How often the scanner checks for new releases (in milliseconds)
-# Default: 60000 (1 minute)
-SCAN_INTERVAL=60000
-
-# SCAN_INTERVAL=60000
-
-# PostgreSQL connection settings
-POSTGRES_USER=postgres
-POSTGRES_PASSWORD=postgres
-POSTGRES_HOST=localhost
-POSTGRES_PORT=5433
-POSTGRES_DB=repo_subscriber
-```
-
-### Gmail SMTP Notes
-
-If using Gmail, you must use an **App Password** (not your regular account password):
-
-1. Enable 2-factor authentication on your Google account
-2. Go to **Google Account → Security → App passwords**
-3. Create a new app password and paste it into `SMTP_PASS`
 
 ---
 
 ## Running with Docker (Recommended)
 
 ### Prerequisites
-
-- [Docker](https://docs.docker.com/get-docker/) and [Docker Compose](https://docs.docker.com/compose/install/) installed
+- Docker and Docker Compose installed.
 
 ### Steps
-
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/NosarevAndrey-p/github-release-notification-api.git
-   cd github-release-notification-api
-   ```
-
-2. Create your `.env` file:
+1. Clone the repository and configure `.env`:
    ```bash
    cp .env.example .env
-   # Edit .env with your SMTP credentials and optional GitHub token
+   # Edit .env with your SMTP credentials and optional GITHUB_TOKEN
    ```
 
-3. Start the services:
+2. Start all services in the background:
    ```bash
-   docker-compose up --build
+   docker compose up --build -d
    ```
+   This command starts:
+   - `db` — PostgreSQL running both `subscription_db` and `notification_db`.
+   - `subscription-service` — public web server on port `3000` (via Nginx proxy).
+   - `notification-service` — scanner and emailer on port `3002`.
+   - `nginx` — reverse proxy routing port `3000` traffic.
+   - `elasticsearch` & `kibana` — central log collection and searching (port `5601`).
+   - `fluent-bit` — log scraper routing log files to Elasticsearch.
+   - `prometheus` & `grafana` — metrics scraping and visualization (port `3001`).
 
-   This will spin up:
-   - **`app`** — the Node.js API server (port `3000`)
-   - **`db`** — a PostgreSQL database
-
-4. The API will be available at `http://localhost:3000`
-
-Database migrations run automatically when the app container starts.
-
-### Stopping the services
-
-```bash
-docker-compose down
-```
-
-To also remove the database volume:
-
-```bash
-docker-compose down -v
-```
+3. Stop and clean up containers (and database volumes):
+   ```bash
+   docker compose down -v
+   ```
 
 ---
 
 ## Running Locally (Without Docker)
 
 ### Prerequisites
-
-- Node.js 18+
-- PostgreSQL running locally
+- Node.js 22+
+- PostgreSQL database instance running locally.
 
 ### Steps
-
-1. Install dependencies:
+1. Install dependencies for all workspaces at the root:
    ```bash
    npm install
    ```
 
-2. Set up your `.env`:
+2. Compile TypeScript for all services:
    ```bash
-   cp .env.example .env
+   npm run build
    ```
 
-3. Start the development server:
-   ```bash
-   npm run dev
-   ```
-
-   Or production mode:
-   ```bash
-   npm start
-   ```
+3. Start services locally using monorepo workspace scripts:
+   - **Start Subscription Service**: `npm run dev:subscription` (starts watch mode on port 3000)
+   - **Start Notification Service**: `npm run dev:notification` (starts watch mode on port 3002)
 
 ---
 
@@ -212,55 +93,34 @@ docker-compose down -v
 
 For detailed, step-by-step instructions on running unit tests, integration tests, and Playwright E2E tests, please refer to the [testing.md](testing.md) guide.
 
-Quick command to run all test suites (Unit, Integration, and E2E) sequentially with automated container setup:
-```bash
-npm run test:all
-```
+* **Unit Tests (All Workspaces)**:
+  ```bash
+  npm run test
+  ```
+* **Integration Tests (All Workspaces)**:
+  ```bash
+  npm run test:integration
+  ```
+* **E2E Tests (Global Suite)**:
+  ```bash
+  npm run test:e2e
+  ```
+* **Run Everything sequentially**:
+  ```bash
+  npm run test:all
+  ```
 
 ---
 
-## Observability & Dashboards
+## Observability Dashboards
 
-The service is fully instrumented with structured logging and metrics collection. When running the stack via Docker Compose, the following observability dashboards are available:
-
-- **Web Dashboard**: `http://localhost:3000/` (public user interface)
-- **Kibana (Logs)**: `http://localhost:5601`
-  - *Setup:* On first boot, go to **Discover**, click **Create data view**, name it `app-logs` with index pattern `app-logs` and `@timestamp` as the timestamp field, then click **Save**.
-- **Prometheus (Scraper targets)**: `http://localhost:9090`
-- **Grafana (Metrics Dashboard)**: `http://localhost:3001`
-  - *Credentials:* `admin` / `admin` (click **Skip** on change password prompt)
-  - *Dashboard:* Open the pre-provisioned **"Application RED Metrics"** dashboard to view request Rate, Errors, and Latency in real-time.
-- **Nginx Reverse Proxy Security**: The `/metrics` endpoint is protected and returns a `403 Forbidden` if accessed publically, but is scraped internally by Prometheus.
-
----
-
-## How It Works
-
-### Subscription Flow
-
-1. User calls `POST /api/subscribe` with their email and a target repo.
-2. The service validates the repo format and checks its existence via the GitHub API.
-3. If valid, a subscription record is created (unconfirmed) and a confirmation email is sent with a unique token link.
-4. User clicks the confirmation link (`GET /api/confirm/:token`) — subscription becomes active.
-5. To unsubscribe, user clicks the unsubscribe link in any notification email (`GET /api/unsubscribe/:token`).
-
-### Release Scanner
-
-- A background scanner runs on the interval defined by `SCAN_INTERVAL`.
-- On each tick, it fetches all confirmed subscriptions and checks the GitHub Releases API for each watched repository.
-- If a new release tag is found (different from the stored `last_seen_tag`), a notification email is sent and `last_seen_tag` is updated in the database.
-- Repositories are deduplicated so the GitHub API is only called once per repo per scan cycle, regardless of how many subscribers watch it.
-
-### Rate Limit Handling
-
-The service respects GitHub's API rate limits:
-- Without a `GITHUB_TOKEN`: 60 requests/hour
-- With a `GITHUB_TOKEN`: 5000 requests/hour
-
-When a `429 Too Many Requests` response is received, the service logs the event and skips the current scan cycle rather than crashing. It is strongly recommended to set a `GITHUB_TOKEN` in production.
+- **Web Dashboard**: `http://localhost:3000/` (reverse proxied via Nginx)
+- **Kibana (Logs)**: `http://localhost:5601` (search index `app-logs`)
+- **Prometheus (Metrics targets)**: `http://localhost:9090` (scrapes both services)
+- **Grafana (Dashboards)**: `http://localhost:3001` (Default: `admin` / `admin`)
 
 ---
 
 ## API Documentation
 
-The full Swagger specification is available in `swagger.yaml`. You can view it interactively at [https://editor.swagger.io/](https://editor.swagger.io/) by pasting the file contents.
+The full API specification is available in `swagger.yaml`. Paste the contents into [https://editor.swagger.io/](https://editor.swagger.io/) to view it interactively.
