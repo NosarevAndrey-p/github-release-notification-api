@@ -2,6 +2,7 @@ import express, { json, urlencoded } from 'express';
 import path from 'path';
 import createApiRouter from './routes/api.js';
 import { createErrorMiddleware } from './middleware/errorMiddleware.js';
+import { requestLogger } from './middleware/requestLoggerMiddleware.js';
 import { IRepositoryStore, ISubscriptionStore } from './types/database.js';
 import { IEmailService } from './types/email.js';
 import { IGitHubService } from './types/github.js';
@@ -22,6 +23,7 @@ export function createApp(deps: AppDeps) {
 
   app.use(json());
   app.use(urlencoded({ extended: true }));
+  app.use(requestLogger);
 
   app.get('/health', (req, res) => {
     res.status(200).json({ status: 'ok' });
