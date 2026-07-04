@@ -9,8 +9,7 @@
     "build": "tsc -p tsconfig.build.json",
     "lint": "eslint .",
     "test": "node --experimental-vm-modules ../../node_modules/jest/bin/jest.js",
-    "test:integration": "node --experimental-vm-modules ../../node_modules/jest/bin/jest.js --config jest.config.integration.js",
-    "test:e2e": "tsx __tests__/e2e/setupAndRun.ts"
+    "test:integration": "node --experimental-vm-modules ../../node_modules/jest/bin/jest.js --config jest.config.integration.js"
   },
   "dependencies": {
     "dotenv": "^17.4.1",
