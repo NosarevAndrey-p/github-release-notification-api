@@ -20,12 +20,7 @@ export const config: Config = {
     scanInterval: Number(process.env.SCAN_INTERVAL) || 60000,
     baseUrl: process.env.BASE_URL || 'http://localhost:3000',
     notificationServiceUrl: process.env.NOTIFICATION_SERVICE_URL || 'http://localhost:3002',
-  },
-  smtp: {
-    host: process.env.SMTP_HOST || '',
-    port: Number(process.env.SMTP_PORT) || 587,
-    user: process.env.SMTP_USER || '',
-    pass: process.env.SMTP_PASS || '',
+    emailServiceUrl: process.env.EMAIL_SERVICE_URL || 'http://localhost:3003',
   },
   db: {
     url: getDatabaseUrl(),

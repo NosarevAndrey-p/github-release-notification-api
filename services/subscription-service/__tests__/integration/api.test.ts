@@ -26,7 +26,7 @@ describe('API Routes (Integration)', () => {
   let app: Express;
   let testPool: pg.Pool;
   let originalFetch: typeof fetch;
-  let mockFetch: jest.Mock<any>;
+  let mockFetch: jest.Mock<() => Promise<Response>>;
 
   const mockEmailService = mock<IEmailService>();
   const mockCrypto = mock<UUIDProvider>();
@@ -49,7 +49,7 @@ describe('API Routes (Integration)', () => {
     mockReset(mockLogger);
 
     mockFetch = jest.fn();
-    global.fetch = mockFetch as any;
+    global.fetch = mockFetch as unknown as typeof fetch;
 
     // Truncate only subscriptions table (repositories table is split out)
     await testPool.query('TRUNCATE TABLE subscriptions RESTART IDENTITY CASCADE');
@@ -69,7 +69,7 @@ describe('API Routes (Integration)', () => {
         status: 201,
         ok: true,
         json: async () => ({ id: 1, full_name: 'owner/repo', last_seen_tag: 'v1.0' }),
-      });
+      } as unknown as Response);
       mockCrypto.randomUUID.mockReturnValue('12345678-1234-1234-1234-123456789012');
       mockEmailService.sendConfirmationEmail.mockResolvedValue(undefined);
 
@@ -119,7 +119,7 @@ describe('API Routes (Integration)', () => {
       mockFetch.mockResolvedValue({
         status: 404,
         ok: false,
-      });
+      } as unknown as Response);
 
       const response = await request(app)
         .post('/api/subscribe')
@@ -239,7 +239,7 @@ describe('API Routes (Integration)', () => {
         status: 200,
         ok: true,
         json: async () => ({ repo_name: 'owner/repo', last_seen_tag: 'v1.0.0' }),
-      });
+      } as unknown as Response);
 
       const response = await request(app)
         .get('/api/subscriptions')
@@ -282,7 +282,7 @@ describe('API Routes (Integration)', () => {
       const sub = await seedSubscription({ repo: 'owner/repo', email: 'user1@example.com' });
       await db.updateSubscriptionConfirmed(sub.id);
       
-      const pendingSub = await seedSubscription({ repo: 'owner/repo', email: 'user2@example.com', confirmToken: 'pending-token', unsubscribeToken: 'pending-unsub' });
+      const _pendingSub = await seedSubscription({ repo: 'owner/repo', email: 'user2@example.com', confirmToken: 'pending-token', unsubscribeToken: 'pending-unsub' });
 
       const response = await request(app)
         .get('/api/internal/subscriptions')

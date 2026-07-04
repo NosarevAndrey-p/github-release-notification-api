@@ -1,30 +1,23 @@
 import { EmailService } from '../../src/services/email/emailService.js';
-import { EmailDeps, IEmailTransporter, ITemplateRenderer } from '../../src/types/email.js';
-import { mock, mockReset } from 'jest-mock-extended';
+import { jest } from '@jest/globals';
 
-describe('EmailService', () => {
-  const mockTransporter = mock<IEmailTransporter>();
-  const mockRenderer = mock<ITemplateRenderer>();
-  
-  const mockDeps: EmailDeps = {
-    baseUrl: 'http://localhost:3000',
-    transporter: mockTransporter,
-    renderer: mockRenderer,
-  };
-
+describe('EmailService Client', () => {
+  const emailServiceUrl = 'http://localhost:3003';
   let emailService: EmailService;
+  let mockFetch: jest.MockedFunction<typeof fetch>;
 
   beforeEach(() => {
-    mockReset(mockTransporter);
-    mockReset(mockRenderer);
+    mockFetch = jest.fn() as jest.MockedFunction<typeof fetch>;
+    mockFetch.mockResolvedValue({
+      ok: true,
+      status: 200,
+    } as unknown as Response);
+    global.fetch = mockFetch;
 
-    mockTransporter.send.mockResolvedValue(undefined);
-    mockRenderer.render.mockResolvedValue('<html>Test Template</html>');
-
-    emailService = new EmailService(mockDeps);
+    emailService = new EmailService({ emailServiceUrl });
   });
 
-  it('should send confirmation email', async () => {
+  it('should send confirmation email request to email-service', async () => {
     await emailService.sendConfirmationEmail(
       'test@example.com',
       'owner/repo',
@@ -32,14 +25,19 @@ describe('EmailService', () => {
       'unsub-token'
     );
 
-    expect(mockRenderer.render).toHaveBeenCalledWith(
-      'confirmation-email',
-      expect.objectContaining({ repo: 'owner/repo' })
-    );
-    expect(mockTransporter.send).toHaveBeenCalledWith(
-      'test@example.com',
-      expect.stringContaining('Confirm subscription to owner/repo'),
-      '<html>Test Template</html>'
+    expect(mockFetch).toHaveBeenCalledWith(
+      `${emailServiceUrl}/api/internal/send-email`,
+      expect.objectContaining({
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'confirmation',
+          to: 'test@example.com',
+          repo: 'owner/repo',
+          confirmToken: 'confirm-token',
+          unsubscribeToken: 'unsub-token',
+        }),
+      })
     );
   });
 });

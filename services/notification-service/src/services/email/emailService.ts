@@ -1,15 +1,10 @@
 import { IEmailService, EmailDeps } from '../../types/email.js';
-import { emailStyles as styles } from '../../constants/emailStyles.js';
 
 export class EmailService implements IEmailService {
-  private renderer;
-  private transporter;
-  private baseUrl;
+  private emailServiceUrl: string;
 
-  constructor({ renderer, transporter, baseUrl }: EmailDeps) {
-    this.renderer = renderer;
-    this.transporter = transporter;
-    this.baseUrl = baseUrl;
+  constructor({ emailServiceUrl }: EmailDeps) {
+    this.emailServiceUrl = emailServiceUrl;
   }
 
   async sendNotificationEmail(
@@ -18,17 +13,21 @@ export class EmailService implements IEmailService {
     tagName: string,
     unsubscribeToken: string
   ): Promise<void> {
-    const unsubscribeUrl = `${this.baseUrl}/api/unsubscribe/${unsubscribeToken}`;
-    const releaseUrl = `https://github.com/${repo}/releases/tag/${tagName}`;
-
-    const html = await this.renderer.render('notification-email', {
-      repo,
-      newTag: tagName,
-      releaseUrl,
-      unsubscribeUrl,
-      styles,
+    const res = await fetch(`${this.emailServiceUrl}/api/internal/send-email`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        type: 'notification',
+        to: email,
+        repo,
+        tagName,
+        unsubscribeToken,
+      }),
     });
 
-    await this.transporter.send(email, `New release ${tagName} for ${repo}`, html);
+    if (!res.ok) {
+      const errText = await res.text().catch(() => '');
+      throw new Error(`Failed to send notification email via email service: ${res.statusText}. ${errText}`);
+    }
   }
 }

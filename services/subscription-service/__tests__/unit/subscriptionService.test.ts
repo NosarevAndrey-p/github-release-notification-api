@@ -5,7 +5,6 @@ import {
   unsubscribeFromRepo,
   getSubscriptions,
 } from '../../src/services/subscriptionService.js';
-import { NotFoundError, ConflictError } from '../../src/types/errors.js';
 import { SubscriptionDeps, SubscriptionResult } from '../../src/types/subscription.js';
 import { mock, mockReset } from 'jest-mock-extended';
 import { ISubscriptionStore, Subscription } from '../../src/types/database.js';
@@ -17,7 +16,7 @@ describe('subscriptionService', () => {
   const mockEmailService = mock<IEmailService>();
   const mockCrypto = mock<UUIDProvider>();
   let originalFetch: typeof fetch;
-  let mockFetch: jest.Mock<any>;
+  let mockFetch: jest.MockedFunction<typeof fetch>;
 
   const mockDeps: SubscriptionDeps = {
     subStore: mockSubStore,
@@ -38,8 +37,8 @@ describe('subscriptionService', () => {
     mockReset(mockSubStore);
     mockReset(mockEmailService);
     mockReset(mockCrypto);
-    mockFetch = jest.fn();
-    global.fetch = mockFetch as any;
+    mockFetch = jest.fn() as jest.MockedFunction<typeof fetch>;
+    global.fetch = mockFetch;
   });
 
   describe('subscribeToRepo', () => {
@@ -49,7 +48,7 @@ describe('subscriptionService', () => {
         status: 200,
         ok: true,
         json: async () => ({ id: 1, full_name: 'owner/repo', last_seen_tag: 'v1.0' }),
-      });
+      } as unknown as Response);
       mockCrypto.randomUUID.mockReturnValue('token123');
       mockEmailService.sendConfirmationEmail.mockResolvedValue(undefined);
 
@@ -75,7 +74,7 @@ describe('subscriptionService', () => {
       mockFetch.mockResolvedValue({
         status: 404,
         ok: false,
-      });
+      } as unknown as Response);
 
       await expect(
         subscribeToRepo(
@@ -183,7 +182,7 @@ describe('subscriptionService', () => {
       mockFetch.mockResolvedValue({
         ok: true,
         json: async () => ({ repo_name: 'owner/repo', last_seen_tag: 'v1.0.0' }),
-      });
+      } as unknown as Response);
 
       const result = await getSubscriptions('test@example.com', mockDeps);
 

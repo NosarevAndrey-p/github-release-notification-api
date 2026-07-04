@@ -18,7 +18,7 @@ async function fetchSubscriptions(repo: string, subscriptionServiceUrl: string):
     if (res.ok) {
       return await res.json() as { email: string; unsubscribe_token: string }[];
     }
-  } catch (err) {
+  } catch {
     // Return null to indicate network or communication error
   }
   return null;

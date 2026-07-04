@@ -12,3 +12,8 @@ scrape_configs:
     metrics_path: '/metrics'
     static_configs:
       - targets: ['notification-service:3002']
+
+  - job_name: 'email-service'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['email-service:3003']

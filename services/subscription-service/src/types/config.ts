@@ -3,13 +3,7 @@ export interface AppConfig {
   scanInterval: number;
   baseUrl: string;
   notificationServiceUrl: string;
-}
-
-export interface SmtpConfig {
-  host: string;
-  port: number;
-  user: string;
-  pass: string;
+  emailServiceUrl: string;
 }
 
 export interface DatabaseConfig {
@@ -24,7 +18,6 @@ export interface GithubConfig {
 
 export interface Config {
   app: AppConfig;
-  smtp: SmtpConfig;
   db: DatabaseConfig;
   github: GithubConfig;
 }

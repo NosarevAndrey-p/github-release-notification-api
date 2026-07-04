@@ -12,8 +12,10 @@
   "scripts": {
     "dev:subscription": "npm run dev -w services/subscription-service",
     "dev:notification": "npm run dev -w services/notification-service",
+    "dev:email": "npm run dev -w services/email-service",
     "start:subscription": "npm run start -w services/subscription-service",
     "start:notification": "npm run start -w services/notification-service",
+    "start:email": "npm run start -w services/email-service",
     "build": "npm run build --workspaces --if-present",
     "lint": "npm run lint --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",

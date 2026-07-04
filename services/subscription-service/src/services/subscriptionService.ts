@@ -51,7 +51,7 @@ export async function subscribeToRepo({ email, repo }: { email: string; repo: st
     }
   } catch (err) {
     if (err instanceof NotFoundError) throw err;
-    throw new Error(`Failed to contact notification service: ${err instanceof Error ? err.message : String(err)}`);
+    throw new Error(`Failed to contact notification service: ${err instanceof Error ? err.message : String(err)}`, { cause: err });
   }
 
   const confirmToken = deps.crypto.randomUUID();

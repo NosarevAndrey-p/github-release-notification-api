@@ -32,6 +32,7 @@ services:
     environment:
       - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/subscription_db
       - NOTIFICATION_SERVICE_URL=http://notification-service:3002
+      - EMAIL_SERVICE_URL=http://email-service:3003
       - DB_MIGRATIONS_DIR=src/db/migrations
       - PORT=3000
     volumes:
@@ -49,10 +50,23 @@ services:
     environment:
       - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/notification_db
       - SUBSCRIPTION_SERVICE_URL=http://subscription-service:3000
+      - EMAIL_SERVICE_URL=http://email-service:3003
       - DB_MIGRATIONS_DIR=src/db/migrations
       - PORT=3002
     volumes:
       - notification-logs:/app/logs
+
+  email-service:
+    build:
+      context: .
+      dockerfile: services/email-service/Dockerfile
+    env_file:
+      - .env
+    environment:
+      - BASE_URL=http://subscription-service:3000
+      - PORT=3003
+    volumes:
+      - email-logs:/app/logs
 
   nginx:
     image: nginx:1.27-alpine
@@ -74,6 +88,7 @@ services:
     depends_on:
       - subscription-service
       - notification-service
+      - email-service
 
   grafana:
     image: grafana/grafana:10.2.3
@@ -126,6 +141,7 @@ services:
       - ./infrastructure/fluent-bit/parsers.conf:/fluent-bit/etc/parsers.conf
       - subscription-logs:/var/log/app/subscription
       - notification-logs:/var/log/app/notification
+      - email-logs:/var/log/app/email
     depends_on:
       elasticsearch:
         condition: service_healthy
@@ -133,9 +149,12 @@ services:
         condition: service_started
       notification-service:
         condition: service_started
+      email-service:
+        condition: service_started
 
 volumes:
   db-data:
   es-data:
   subscription-logs:
   notification-logs:
+  email-logs:

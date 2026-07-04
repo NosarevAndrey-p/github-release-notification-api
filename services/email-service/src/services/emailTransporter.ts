@@ -1,6 +1,6 @@
 import nodemailer from 'nodemailer';
-import { IEmailTransporter } from '../../types/email.js';
-import { SmtpConfig } from '../../types/config.js';
+import { IEmailTransporter } from '../types/email.js';
+import { SmtpConfig } from '../types/config.js';
 
 const SECURE_SMTP_PORT = 465;
 

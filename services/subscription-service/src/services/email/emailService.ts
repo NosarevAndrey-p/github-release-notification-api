@@ -1,15 +1,10 @@
 import { IEmailService, EmailDeps } from '../../types/email.js';
-import { emailStyles as styles } from '../../constants/emailStyles.js';
 
 export class EmailService implements IEmailService {
-  private renderer;
-  private transporter;
-  private baseUrl;
+  private emailServiceUrl: string;
 
-  constructor({ renderer, transporter, baseUrl }: EmailDeps) {
-    this.renderer = renderer;
-    this.transporter = transporter;
-    this.baseUrl = baseUrl;
+  constructor({ emailServiceUrl }: EmailDeps) {
+    this.emailServiceUrl = emailServiceUrl;
   }
 
   async sendConfirmationEmail(
@@ -18,16 +13,21 @@ export class EmailService implements IEmailService {
     confirmToken: string,
     unsubscribeToken: string
   ): Promise<void> {
-    const confirmUrl = `${this.baseUrl}/api/confirm/${confirmToken}`;
-    const unsubscribeUrl = `${this.baseUrl}/api/unsubscribe/${unsubscribeToken}`;
-
-    const html = await this.renderer.render('confirmation-email', {
-      repo,
-      confirmUrl,
-      unsubscribeUrl,
-      styles,
+    const res = await fetch(`${this.emailServiceUrl}/api/internal/send-email`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        type: 'confirmation',
+        to: email,
+        repo,
+        confirmToken,
+        unsubscribeToken,
+      }),
     });
 
-    await this.transporter.send(email, `Confirm subscription to ${repo}`, html);
+    if (!res.ok) {
+      const errText = await res.text().catch(() => '');
+      throw new Error(`Failed to send confirmation email via email service: ${res.statusText}. ${errText}`);
+    }
   }
 }

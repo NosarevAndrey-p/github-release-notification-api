@@ -3,20 +3,13 @@ import { scan } from './src/services/scannerService.js';
 import db from './src/db/database.js';
 import githubService from './src/services/githubService.js';
 import { EmailService } from './src/services/email/emailService.js';
-import { EjsTemplateRenderer } from './src/services/email/templateRenderer.js';
-import { NodemailerTransporter } from './src/services/email/emailTransporter.js';
 import { logger } from './src/services/loggerService.js';
 import { config } from './src/config/index.js';
 
 await db.initSchema();
 
-// Compose EmailService dependencies
-const renderer = new EjsTemplateRenderer();
-const transporter = new NodemailerTransporter(config.smtp);
 const emailService = new EmailService({ 
-  renderer, 
-  transporter, 
-  baseUrl: config.app.baseUrl 
+  emailServiceUrl: config.app.emailServiceUrl 
 });
 
 const app = createApp({

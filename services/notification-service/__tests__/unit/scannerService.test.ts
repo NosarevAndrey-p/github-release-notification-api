@@ -13,7 +13,7 @@ describe('scannerService', () => {
   const mockEmailService = mock<IEmailService>();
   const mockLogger = mock<ILogger>();
   let originalFetch: typeof fetch;
-  let mockFetch: jest.Mock<any>;
+  let mockFetch: jest.Mock<() => Promise<Response>>;
 
   const deps: ScannerDeps = {
     repoStore: mockDb,
@@ -38,7 +38,7 @@ describe('scannerService', () => {
     mockReset(mockLogger);
 
     mockFetch = jest.fn();
-    global.fetch = mockFetch as any;
+    global.fetch = mockFetch as unknown as typeof fetch;
 
     mockEmailService.sendNotificationEmail.mockResolvedValue(undefined);
   });
@@ -54,7 +54,7 @@ describe('scannerService', () => {
     mockFetch.mockResolvedValue({
       ok: true,
       json: async () => [{ email: 'user1@example.com', unsubscribe_token: 'token1' }],
-    });
+    } as unknown as Response);
 
     await scan(deps);
 
@@ -81,7 +81,7 @@ describe('scannerService', () => {
     mockFetch.mockResolvedValue({
       ok: true,
       json: async () => [],
-    });
+    } as unknown as Response);
 
     await scan(deps);
 
@@ -144,7 +144,7 @@ describe('scannerService', () => {
     mockFetch.mockResolvedValue({
       ok: true,
       json: async () => [{ email: 'user@example.com', unsubscribe_token: 'token1' }],
-    });
+    } as unknown as Response);
     const emailError = new Error('SMTP server down');
     mockEmailService.sendNotificationEmail.mockRejectedValue(emailError);
 
