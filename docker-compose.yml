@@ -63,7 +63,7 @@ services:
     env_file:
       - .env
     environment:
-      - BASE_URL=http://subscription-service:3000
+      - BASE_URL=${BASE_URL:-http://localhost:3000}
       - PORT=3003
     volumes:
       - email-logs:/app/logs

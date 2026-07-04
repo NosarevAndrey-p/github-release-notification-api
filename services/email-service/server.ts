@@ -11,7 +11,7 @@ const renderer = new EjsTemplateRenderer();
 const emailService = new EmailService({
   transporter,
   renderer,
-  baseUrl: process.env.BASE_URL || 'http://localhost:3000', // Points to subscription-service
+  baseUrl: config.baseUrl,
 });
 
 const app = createApp({

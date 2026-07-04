@@ -5,6 +5,7 @@ dotenv.config();
 
 const config: Config = {
   port: Number(process.env.PORT) || 3003,
+  baseUrl: process.env.BASE_URL || 'http://localhost:3000',
   smtp: {
     host: process.env.SMTP_HOST || 'localhost',
     port: Number(process.env.SMTP_PORT) || 1025,

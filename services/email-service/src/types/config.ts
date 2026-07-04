@@ -7,5 +7,6 @@ export interface SmtpConfig {
 
 export interface Config {
   port: number;
+  baseUrl: string;
   smtp: SmtpConfig;
 }
