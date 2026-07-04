@@ -1,25 +1,24 @@
 import { execSync } from 'child_process';
 import path from 'path';
-import fs from 'fs';
 import pg from 'pg';
+import { migrate } from 'postgres-migrations';
 
 async function main() {
   const composePath = path.join(process.cwd(), 'docker-compose.test.yml');
   const dbUrl = 'postgresql://postgres:postgres@127.0.0.1:5434/repo_subscriber_test';
-  const schemaPath = path.join(process.cwd(), 'src', 'db', 'schema.pg.sql');
+  const migrationsDirectory = path.join(process.cwd(), 'src', 'db', 'migrations');
 
   try {
     console.info('\n[E2E Setup] Starting test database container...');
     execSync(`docker compose -f "${composePath}" up -d --wait`, { stdio: 'inherit' });
     console.info('[E2E Setup] Database is ready.');
 
-    console.info('[E2E Setup] Initializing database schema...');
+    console.info('[E2E Setup] Running database migrations...');
     const client = new pg.Client({ connectionString: dbUrl });
     await client.connect();
-    const schema = fs.readFileSync(schemaPath, 'utf-8');
-    await client.query(schema);
+    await migrate({ client }, migrationsDirectory);
     await client.end();
-    console.info('[E2E Setup] Schema initialized successfully.');
+    console.info('[E2E Setup] Migrations executed successfully.');
 
     console.info('[E2E Setup] Running Playwright E2E tests...');
     // We pass --config to make sure it uses our config

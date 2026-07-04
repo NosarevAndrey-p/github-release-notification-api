@@ -28,7 +28,7 @@ export const config: Config = {
   },
   db: {
     url: getDatabaseUrl(),
-    schemaPath: process.env.DB_SCHEMA_PATH || path.join(process.cwd(), 'src', 'db', 'schema.pg.sql'),
+    migrationsDirectory: process.env.DB_MIGRATIONS_DIR || path.join(process.cwd(), 'src', 'db', 'migrations'),
   },
   github: {
     apiUrl: process.env.GITHUB_API_URL || 'https://api.github.com',

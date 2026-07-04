@@ -13,7 +13,7 @@ export interface SmtpConfig {
 
 export interface DatabaseConfig {
   url: string;
-  schemaPath: string;
+  migrationsDirectory: string;
 }
 
 export interface GithubConfig {

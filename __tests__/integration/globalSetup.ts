@@ -1,7 +1,7 @@
 import { execSync } from 'child_process';
 import path from 'path';
-import fs from 'fs';
 import pg from 'pg';
+import { migrate } from 'postgres-migrations';
 
 export default async function globalSetup() {
   console.info('\n[Jest Global Setup] Starting test database container...');
@@ -14,17 +14,16 @@ export default async function globalSetup() {
   console.info('[Jest Global Setup] Database is ready.');
 
   const dbUrl = 'postgresql://postgres:postgres@localhost:5434/repo_subscriber_test';
-  const schemaPath = path.join(process.cwd(), 'src', 'db', 'schema.pg.sql');
+  const migrationsDirectory = path.join(process.cwd(), 'src', 'db', 'migrations');
 
-  console.info('[Jest Global Setup] Initializing database schema...');
+  console.info('[Jest Global Setup] Running database migrations...');
   
   // Use raw pg client to initialize the schema without loading app files
   const client = new pg.Client({ connectionString: dbUrl });
   await client.connect();
   
-  const schema = fs.readFileSync(schemaPath, 'utf-8');
-  await client.query(schema);
+  await migrate({ client }, migrationsDirectory);
   await client.end();
 
-  console.info('[Jest Global Setup] Schema initialized successfully.');
+  console.info('[Jest Global Setup] Migrations executed successfully.');
 }

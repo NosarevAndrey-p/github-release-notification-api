@@ -1,5 +1,5 @@
-import fs from 'fs';
 import pg from 'pg';
+import { migrate } from 'postgres-migrations';
 import { IDatabaseClient, Repository, Subscription, UserSubscription, DatabaseResult } from '../types/database.js';
 import { DatabaseConfig } from '../types/config.js';
 
@@ -37,7 +37,7 @@ const queries = {
 
 export default class PostgresDatabase implements IDatabaseClient {
   private pool: pg.Pool;
-  private schemaPath: string;
+  private migrationsDirectory: string;
 
   constructor(config: DatabaseConfig) {
     if (!config.url) {
@@ -45,13 +45,11 @@ export default class PostgresDatabase implements IDatabaseClient {
     }
 
     this.pool = new Pool({ connectionString: config.url });
-    this.schemaPath = config.schemaPath;
+    this.migrationsDirectory = config.migrationsDirectory;
   }
 
   async initSchema(): Promise<void> {
-    const schema = fs.readFileSync(this.schemaPath, 'utf-8');
-
-    await this.pool.query(schema);
+    await migrate({ client: this.pool }, this.migrationsDirectory);
   }
 
   private async query(sql: string, params: unknown[] = []): Promise<pg.QueryResult> {
