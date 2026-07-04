@@ -43,7 +43,7 @@ export async function subscribeToRepo({ email, repo }: { email: string; repo: st
     });
 
     if (res.status === 404) {
-      throw new NotFoundError('Repository not found on GitHub');
+      throw new NotFoundError('repository not found');
     }
 
     if (!res.ok) {

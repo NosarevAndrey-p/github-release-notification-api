@@ -2,8 +2,12 @@ import { test, expect } from '@playwright/test';
 import pg from 'pg';
 import { mockGithub } from './mockGithubServer.js';
 
-const pool = new pg.Pool({
-  connectionString: 'postgresql://postgres:postgres@127.0.0.1:5434/repo_subscriber_test',
+const subPool = new pg.Pool({
+  connectionString: 'postgresql://postgres:postgres@127.0.0.1:5434/subscription_test_db',
+});
+
+const notifPool = new pg.Pool({
+  connectionString: 'postgresql://postgres:postgres@127.0.0.1:5434/notification_test_db',
 });
 
 test.describe('E2E - Subscription Flow', () => {
@@ -14,12 +18,14 @@ test.describe('E2E - Subscription Flow', () => {
 
   test.afterAll(async () => {
     await mockGithub.stop();
-    await pool.end();
+    await subPool.end();
+    await notifPool.end();
   });
 
   test.beforeEach(async () => {
     mockGithub.reset();
-    await pool.query('TRUNCATE TABLE subscriptions, repositories RESTART IDENTITY CASCADE');
+    await subPool.query('TRUNCATE TABLE subscriptions RESTART IDENTITY CASCADE');
+    await notifPool.query('TRUNCATE TABLE repositories RESTART IDENTITY CASCADE');
   });
 
   test('should manage the whole subscription lifecycle (subscribe, confirm, scan for updates, unsubscribe)', async ({ page }) => {
@@ -125,7 +131,7 @@ test.describe('E2E - Subscription Flow', () => {
     // 10. Wait for background scanner (runs every 1s) to pick up the change and update DB.
     // We poll the database directly until the repository's last seen tag becomes v2.0.0
     await expect.poll(async () => {
-      const res = await pool.query('SELECT last_seen_tag FROM repositories WHERE full_name = $1', [repo]);
+      const res = await notifPool.query('SELECT last_seen_tag FROM repositories WHERE full_name = $1', [repo]);
       return res.rows[0]?.last_seen_tag;
     }, {
       message: 'Wait for scanner to detect and update repository last_seen_tag to v2.0.0',

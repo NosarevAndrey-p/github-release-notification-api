@@ -1,5 +1,6 @@
 import express, { json, urlencoded } from 'express';
 import path from 'path';
+import { fileURLToPath } from 'url';
 import client from 'prom-client';
 import createApiRouter from './routes/api.js';
 import { createErrorMiddleware } from './middleware/errorMiddleware.js';
@@ -9,6 +10,9 @@ import { ISubscriptionStore } from './types/database.js';
 import { IEmailService } from './types/email.js';
 import { ILogger } from './types/logger.js';
 import { UUIDProvider } from './types/subscription.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 interface AppDeps {
   subStore: ISubscriptionStore;
@@ -38,7 +42,7 @@ export function createApp(deps: AppDeps) {
   });
 
   // Serve static files from /public
-  app.use(express.static(path.join(process.cwd(), 'public')));
+  app.use(express.static(path.resolve(__dirname, '../public')));
 
   app.use('/api',
     createApiRouter({ 
