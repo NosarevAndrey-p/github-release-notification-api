@@ -82,7 +82,7 @@ describe('subscriptionService', () => {
           { email: 'test@example.com', repo: 'owner/repo' },
           mockDeps
         )
-      ).rejects.toThrow('Repository not found on GitHub');
+      ).rejects.toThrow('repository not found');
     });
 
     it('should throw ConflictError for duplicate confirmed subscription', async () => {

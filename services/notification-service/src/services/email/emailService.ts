@@ -12,25 +12,6 @@ export class EmailService implements IEmailService {
     this.baseUrl = baseUrl;
   }
 
-  async sendConfirmationEmail(
-    email: string,
-    repo: string,
-    confirmToken: string,
-    unsubscribeToken: string
-  ): Promise<void> {
-    const confirmUrl = `${this.baseUrl}/api/confirm/${confirmToken}`;
-    const unsubscribeUrl = `${this.baseUrl}/api/unsubscribe/${unsubscribeToken}`;
-
-    const html = await this.renderer.render('confirmation-email', {
-      repo,
-      confirmUrl,
-      unsubscribeUrl,
-      styles,
-    });
-
-    await this.transporter.send(email, `Confirm subscription to ${repo}`, html);
-  }
-
   async sendNotificationEmail(
     email: string,
     repo: string,

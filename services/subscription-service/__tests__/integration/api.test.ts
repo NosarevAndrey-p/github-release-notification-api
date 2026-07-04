@@ -126,7 +126,7 @@ describe('API Routes (Integration)', () => {
         .send({ email: 'test@example.com', repo: 'owner/repo' });
 
       expect(response.status).toBe(404);
-      expect(response.body.error).toBe('Repository not found on GitHub');
+      expect(response.body.error).toBe('repository not found');
 
       // Verify no records were inserted
       const subs = await testPool.query('SELECT COUNT(*) FROM subscriptions');

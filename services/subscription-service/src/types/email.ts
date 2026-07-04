@@ -19,11 +19,4 @@ export interface IEmailService {
     confirmToken: string,
     unsubscribeToken: string
   ): Promise<void>;
-
-  sendNotificationEmail(
-    email: string,
-    repo: string,
-    tagName: string,
-    unsubscribeToken: string
-  ): Promise<void>;
 }

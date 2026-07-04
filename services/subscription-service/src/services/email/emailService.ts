@@ -30,24 +30,4 @@ export class EmailService implements IEmailService {
 
     await this.transporter.send(email, `Confirm subscription to ${repo}`, html);
   }
-
-  async sendNotificationEmail(
-    email: string,
-    repo: string,
-    tagName: string,
-    unsubscribeToken: string
-  ): Promise<void> {
-    const unsubscribeUrl = `${this.baseUrl}/api/unsubscribe/${unsubscribeToken}`;
-    const releaseUrl = `https://github.com/${repo}/releases/tag/${tagName}`;
-
-    const html = await this.renderer.render('notification-email', {
-      repo,
-      newTag: tagName,
-      releaseUrl,
-      unsubscribeUrl,
-      styles,
-    });
-
-    await this.transporter.send(email, `New release ${tagName} for ${repo}`, html);
-  }
 }

@@ -24,21 +24,21 @@ describe('EmailService', () => {
     emailService = new EmailService(mockDeps);
   });
 
-  it('should send confirmation email', async () => {
-    await emailService.sendConfirmationEmail(
+  it('should send notification email', async () => {
+    await emailService.sendNotificationEmail(
       'test@example.com',
       'owner/repo',
-      'confirm-token',
+      'v1.0',
       'unsub-token'
     );
 
     expect(mockRenderer.render).toHaveBeenCalledWith(
-      'confirmation-email',
-      expect.objectContaining({ repo: 'owner/repo' })
+      'notification-email',
+      expect.objectContaining({ repo: 'owner/repo', newTag: 'v1.0' })
     );
     expect(mockTransporter.send).toHaveBeenCalledWith(
       'test@example.com',
-      expect.stringContaining('Confirm subscription to owner/repo'),
+      expect.stringContaining('New release v1.0 for owner/repo'),
       '<html>Test Template</html>'
     );
   });
