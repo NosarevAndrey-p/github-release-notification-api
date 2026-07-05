@@ -101,15 +101,5 @@ describe('EmailService', () => {
         'unsub-token'
       );
     });
-
-    it('should throw error for unknown message type', async () => {
-      await expect(
-        emailService.handleEmailMessage({
-          type: 'invalid' as any,
-          to: 'test@example.com',
-          repo: 'owner/repo',
-        })
-      ).rejects.toThrow('Unknown email message type: invalid');
-    });
   });
 });

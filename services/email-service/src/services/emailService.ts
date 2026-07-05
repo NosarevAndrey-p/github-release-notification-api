@@ -68,7 +68,7 @@ export class EmailService implements IEmailService {
         payload.unsubscribeToken || ''
       );
     } else {
-      throw new BadRequestError(`Unknown email message type: ${(payload as any).type}`);
+      throw new BadRequestError(`Unknown email message type: ${payload.type}`);
     }
   }
 }
