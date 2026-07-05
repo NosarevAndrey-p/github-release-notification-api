@@ -59,7 +59,8 @@ describe('scannerService', () => {
     await scan(deps);
 
     expect(mockFetch).toHaveBeenCalledWith(
-      'http://localhost:3000/api/internal/subscriptions?repo=owner%2Frepo'
+      'http://localhost:3000/api/internal/subscriptions?repo=owner%2Frepo',
+      expect.objectContaining({ signal: expect.any(Object) })
     );
     expect(mockEmailService.sendNotificationEmail).toHaveBeenCalledWith(
       'user1@example.com',
@@ -86,7 +87,8 @@ describe('scannerService', () => {
     await scan(deps);
 
     expect(mockFetch).toHaveBeenCalledWith(
-      'http://localhost:3000/api/internal/subscriptions?repo=owner%2Frepo'
+      'http://localhost:3000/api/internal/subscriptions?repo=owner%2Frepo',
+      expect.objectContaining({ signal: expect.any(Object) })
     );
     expect(mockEmailService.sendNotificationEmail).not.toHaveBeenCalled();
     expect(mockDb.deleteRepositoryById).toHaveBeenCalledWith(1);

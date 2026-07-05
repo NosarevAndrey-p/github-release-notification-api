@@ -14,6 +14,7 @@ export class NotificationService implements INotificationService {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ repo_name: repoName }),
+        signal: AbortSignal.timeout(5000),
       });
 
       if (res.status === 404) {
@@ -31,7 +32,9 @@ export class NotificationService implements INotificationService {
 
   async fetchLatestTag(repoName: string): Promise<string | null> {
     try {
-      const res = await fetch(`${this.notificationServiceUrl}/api/internal/repositories?repo=${encodeURIComponent(repoName)}`);
+      const res = await fetch(`${this.notificationServiceUrl}/api/internal/repositories?repo=${encodeURIComponent(repoName)}`, {
+        signal: AbortSignal.timeout(5000),
+      });
       if (res.ok) {
         const data = await res.json() as { last_seen_tag: string | null };
         return data.last_seen_tag;
@@ -46,7 +49,9 @@ export class NotificationService implements INotificationService {
     if (repoNames.length === 0) return {};
     try {
       const reposParam = repoNames.map(r => encodeURIComponent(r)).join(',');
-      const res = await fetch(`${this.notificationServiceUrl}/api/internal/repositories?repos=${reposParam}`);
+      const res = await fetch(`${this.notificationServiceUrl}/api/internal/repositories?repos=${reposParam}`, {
+        signal: AbortSignal.timeout(5000),
+      });
       if (res.ok) {
         return await res.json() as Record<string, string | null>;
       }

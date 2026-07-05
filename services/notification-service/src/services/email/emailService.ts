@@ -23,6 +23,7 @@ export class EmailService implements IEmailService {
         tagName,
         unsubscribeToken,
       }),
+      signal: AbortSignal.timeout(5000),
     });
 
     if (!res.ok) {

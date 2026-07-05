@@ -14,7 +14,9 @@ export interface ScannerDeps {
 
 async function fetchSubscriptions(repo: string, subscriptionServiceUrl: string): Promise<{ email: string; unsubscribe_token: string }[] | null> {
   try {
-    const res = await fetch(`${subscriptionServiceUrl}/api/internal/subscriptions?repo=${encodeURIComponent(repo)}`);
+    const res = await fetch(`${subscriptionServiceUrl}/api/internal/subscriptions?repo=${encodeURIComponent(repo)}`, {
+      signal: AbortSignal.timeout(5000),
+    });
     if (res.ok) {
       return await res.json() as { email: string; unsubscribe_token: string }[];
     }
