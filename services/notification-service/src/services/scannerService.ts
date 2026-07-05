@@ -72,6 +72,7 @@ async function processRepository(repo: Repository, deps: ScannerDeps) {
   } else {
     logger.info(`No active subscriptions found for ${repo.full_name}. Deleting from tracked repositories.`);
     await repoStore.deleteRepositoryById(repo.id);
+    return;
   }
 
   await repoStore.updateRepositoryLastSeenTag(repo.id, release.tag_name);

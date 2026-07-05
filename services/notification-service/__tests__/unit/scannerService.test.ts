@@ -90,7 +90,7 @@ describe('scannerService', () => {
     );
     expect(mockEmailService.sendNotificationEmail).not.toHaveBeenCalled();
     expect(mockDb.deleteRepositoryById).toHaveBeenCalledWith(1);
-    expect(mockDb.updateRepositoryLastSeenTag).toHaveBeenCalledWith(1, 'v1.1');
+    expect(mockDb.updateRepositoryLastSeenTag).not.toHaveBeenCalled();
   });
 
   it('should skip if no new release', async () => {
