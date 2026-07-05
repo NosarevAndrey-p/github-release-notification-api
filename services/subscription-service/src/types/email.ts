@@ -1,7 +1,7 @@
-import { AmqpService } from '../services/amqpService.js';
+import { IAmqpService } from './amqp.js';
 
 export interface EmailDeps {
-  amqpService: AmqpService;
+  amqpService: IAmqpService;
 }
 
 export interface IEmailService {

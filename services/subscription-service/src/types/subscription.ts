@@ -15,13 +15,13 @@ export interface UUIDProvider {
   randomUUID: () => string;
 }
 
-import { AmqpService } from '../services/amqpService.js';
+import { IAmqpService } from './amqp.js';
 
 export interface SubscriptionDeps {
   subStore: ISubscriptionStore;
   emailService: IEmailService;
   repoManagerService: IRepoManagerService;
-  amqpService: AmqpService;
+  amqpService: IAmqpService;
   crypto: UUIDProvider;
 }
 

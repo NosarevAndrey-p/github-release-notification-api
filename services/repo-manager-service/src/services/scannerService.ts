@@ -2,13 +2,13 @@ import { IRepositoryStore, Repository } from '../types/database.js';
 import { IGitHubService } from '../types/github.js';
 import { RateLimitError } from '../types/errors.js';
 import { ILogger } from '../types/logger.js';
-import { AmqpService } from './amqpService.js';
+import { IAmqpService } from '../types/amqp.js';
 
 export interface ScannerDeps {
   repoStore: IRepositoryStore;
   githubService: IGitHubService;
   logger: ILogger;
-  amqpService: AmqpService;
+  amqpService: IAmqpService;
 }
 
 export async function scan(deps: ScannerDeps) {

@@ -11,13 +11,13 @@ import { ValidatorService } from '../services/validatorService.js';
 import { UUIDProvider, SubscriptionResult } from '../types/subscription.js';
 import { IRepoManagerService } from '../types/repo-manager.js';
 
-import { AmqpService } from '../services/amqpService.js';
+import { IAmqpService } from '../types/amqp.js';
 
 interface ApiDeps {
   subStore: ISubscriptionStore;
   emailService: IEmailService;
   repoManagerService: IRepoManagerService;
-  amqpService: AmqpService;
+  amqpService: IAmqpService;
   crypto: UUIDProvider;
 }
 

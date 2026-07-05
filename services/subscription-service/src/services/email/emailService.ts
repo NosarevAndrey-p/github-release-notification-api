@@ -1,8 +1,8 @@
 import { IEmailService, EmailDeps } from '../../types/email.js';
-import { AmqpService } from '../amqpService.js';
+import { IAmqpService } from '../../types/amqp.js';
 
 export class EmailService implements IEmailService {
-  private amqpService: AmqpService;
+  private amqpService: IAmqpService;
 
   constructor({ amqpService }: EmailDeps) {
     this.amqpService = amqpService;
