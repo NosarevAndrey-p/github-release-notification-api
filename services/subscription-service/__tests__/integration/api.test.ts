@@ -9,7 +9,7 @@ import { ILogger } from '../../src/types/logger.js';
 import db from '../../src/db/database.js';
 import pg from 'pg';
 
-import { NotificationService } from '../../src/services/notification/notificationService.js';
+import { RepoManagerService } from '../../src/services/repo-manager/repoManagerService.js';
 
 async function seedSubscription(params: {
   email?: string;
@@ -56,14 +56,14 @@ describe('API Routes (Integration)', () => {
     // Truncate only subscriptions table (repositories table is split out)
     await testPool.query('TRUNCATE TABLE subscriptions RESTART IDENTITY CASCADE');
 
-    const notificationService = new NotificationService({
-      notificationServiceUrl: 'http://localhost:3002',
+    const repoManagerService = new RepoManagerService({
+      repoManagerServiceUrl: 'http://localhost:3002',
     });
 
     app = createApp({
       subStore: db,
       emailService: mockEmailService,
-      notificationService,
+      repoManagerService,
       logger: mockLogger,
       crypto: mockCrypto,
     });
