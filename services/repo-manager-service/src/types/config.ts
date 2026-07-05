@@ -2,7 +2,6 @@ export interface AppConfig {
   port: number;
   scanInterval: number;
   subscriptionServiceUrl: string;
-  emailServiceUrl: string;
   amqpUrl: string;
 }
 

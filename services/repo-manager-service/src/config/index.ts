@@ -19,7 +19,6 @@ export const config: Config = {
     port: Number(process.env.PORT) || 3002,
     scanInterval: Number(process.env.SCAN_INTERVAL) || 60000,
     subscriptionServiceUrl: process.env.SUBSCRIPTION_SERVICE_URL || 'http://localhost:3000',
-    emailServiceUrl: process.env.EMAIL_SERVICE_URL || 'http://localhost:3003',
     amqpUrl: process.env.AMQP_URL || 'amqp://localhost:5672',
   },
   db: {
