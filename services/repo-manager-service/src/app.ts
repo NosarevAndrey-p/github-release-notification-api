@@ -7,10 +7,9 @@ import { metricsMiddleware } from './middleware/metricsMiddleware.js';
 import { IRepositoryStore } from './types/database.js';
 import { IGitHubService } from './types/github.js';
 import { ILogger } from './types/logger.js';
+import { ApiDeps } from './routes/api.js';
 
-interface AppDeps {
-  repoStore: IRepositoryStore;
-  githubService: IGitHubService;
+export interface AppDeps extends ApiDeps {
   logger: ILogger;
 }
 
@@ -32,10 +31,7 @@ export function createApp(deps: AppDeps) {
   });
 
   app.use('/api',
-    createApiRouter({ 
-      repoStore: deps.repoStore,
-      githubService: deps.githubService,
-    })
+    createApiRouter({ ...deps })
   );
 
   app.use(createErrorMiddleware(deps.logger));

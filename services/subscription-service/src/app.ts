@@ -6,26 +6,12 @@ import createApiRouter from './routes/api.js';
 import { createErrorMiddleware } from './middleware/errorMiddleware.js';
 import { requestLogger } from './middleware/requestLoggerMiddleware.js';
 import { metricsMiddleware } from './middleware/metricsMiddleware.js';
-import { ISubscriptionStore } from './types/database.js';
-import { IEmailService } from './types/email.js';
-import { ILogger } from './types/logger.js';
-import { UUIDProvider } from './types/subscription.js';
+import { ApiDeps } from './routes/api.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-import { IRepoManagerService } from './types/repo-manager.js';
-
-import { IAmqpService } from './types/amqp.js';
-
-export interface AppDeps {
-  subStore: ISubscriptionStore;
-  emailService: IEmailService;
-  repoManagerService: IRepoManagerService;
-  amqpService: IAmqpService;
-  logger: ILogger;
-  crypto: UUIDProvider;
-}
+export interface AppDeps extends ApiDeps {}
 
 export function createApp(deps: AppDeps) {
   const app = express();

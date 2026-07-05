@@ -5,21 +5,10 @@ import {
   unsubscribeFromRepo,
   getSubscriptions,
 } from '../services/subscriptionService.js';
-import { ISubscriptionStore } from '../types/database.js';
-import { IEmailService } from '../types/email.js';
 import { ValidatorService } from '../services/validatorService.js';
-import { UUIDProvider, SubscriptionResult } from '../types/subscription.js';
-import { IRepoManagerService } from '../types/repo-manager.js';
+import { SubscriptionResult, SubscriptionDeps } from '../types/subscription.js';
 
-import { IAmqpService } from '../types/amqp.js';
-
-interface ApiDeps {
-  subStore: ISubscriptionStore;
-  emailService: IEmailService;
-  repoManagerService: IRepoManagerService;
-  amqpService: IAmqpService;
-  crypto: UUIDProvider;
-}
+export interface ApiDeps extends SubscriptionDeps {}
 
 const SUBSCRIPTION_MESSAGES = {
   [SubscriptionResult.CREATED]: 'subscription successful, confirmation email sent',

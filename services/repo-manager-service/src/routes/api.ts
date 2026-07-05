@@ -3,7 +3,7 @@ import { IRepositoryStore } from '../types/database.js';
 import { IGitHubService } from '../types/github.js';
 import { ValidatorService } from '../services/validatorService.js';
 
-interface ApiDeps {
+export interface ApiDeps {
   repoStore: IRepositoryStore;
   githubService: IGitHubService;
 }

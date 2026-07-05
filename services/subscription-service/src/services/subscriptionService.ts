@@ -101,7 +101,7 @@ export async function handleReleasePublishedEvent(
         sub.unsubscribe_token
       );
     } catch (err) {
-      console.error(`Failed to dispatch notification for ${sub.email}:`, err);
+      deps.logger.error(`Failed to dispatch notification for ${sub.email}:`, err);
     }
   }
 }

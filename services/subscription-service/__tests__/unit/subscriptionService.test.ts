@@ -12,6 +12,7 @@ import { IEmailService } from '../../src/types/email.js';
 import { UUIDProvider } from '../../src/types/subscription.js';
 import { IRepoManagerService } from '../../src/types/repo-manager.js';
 import { AmqpService } from '../../src/services/amqpService.js';
+import { ILogger } from '../../src/types/logger.js';
 import { NotFoundError } from '../../src/types/errors.js';
 
 describe('subscriptionService', () => {
@@ -20,6 +21,7 @@ describe('subscriptionService', () => {
   const mockRepoManagerService = mock<IRepoManagerService>();
   const mockAmqpService = mock<AmqpService>();
   const mockCrypto = mock<UUIDProvider>();
+  const mockLogger = mock<ILogger>();
 
   const mockDeps: SubscriptionDeps = {
     subStore: mockSubStore,
@@ -27,6 +29,7 @@ describe('subscriptionService', () => {
     repoManagerService: mockRepoManagerService,
     amqpService: mockAmqpService,
     crypto: mockCrypto,
+    logger: mockLogger,
   };
 
   beforeEach(() => {
@@ -35,6 +38,7 @@ describe('subscriptionService', () => {
     mockReset(mockRepoManagerService);
     mockReset(mockAmqpService);
     mockReset(mockCrypto);
+    mockReset(mockLogger);
   });
 
   describe('subscribeToRepo', () => {

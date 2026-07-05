@@ -39,6 +39,7 @@ const subscriptionDeps = {
   repoManagerService,
   amqpService,
   crypto,
+  logger,
 };
 
 interface ReleasePublishedPayload {
