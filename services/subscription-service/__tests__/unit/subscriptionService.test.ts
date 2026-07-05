@@ -3,25 +3,29 @@ import {
   confirmSubscription,
   unsubscribeFromRepo,
   getSubscriptions,
+  handleReleasePublishedEvent,
 } from '../../src/services/subscriptionService.js';
 import { SubscriptionDeps, SubscriptionResult } from '../../src/types/subscription.js';
 import { mock, mockReset } from 'jest-mock-extended';
-import { ISubscriptionStore, Subscription } from '../../src/db/database.js';
+import { ISubscriptionStore, Subscription } from '../../src/types/database.js';
 import { IEmailService } from '../../src/types/email.js';
 import { UUIDProvider } from '../../src/types/subscription.js';
 import { IRepoManagerService } from '../../src/types/repo-manager.js';
+import { AmqpService } from '../../src/services/amqpService.js';
 import { NotFoundError } from '../../src/types/errors.js';
 
 describe('subscriptionService', () => {
   const mockSubStore = mock<ISubscriptionStore>();
   const mockEmailService = mock<IEmailService>();
   const mockRepoManagerService = mock<IRepoManagerService>();
+  const mockAmqpService = mock<AmqpService>();
   const mockCrypto = mock<UUIDProvider>();
 
   const mockDeps: SubscriptionDeps = {
     subStore: mockSubStore,
     emailService: mockEmailService,
     repoManagerService: mockRepoManagerService,
+    amqpService: mockAmqpService,
     crypto: mockCrypto,
   };
 
@@ -29,6 +33,7 @@ describe('subscriptionService', () => {
     mockReset(mockSubStore);
     mockReset(mockEmailService);
     mockReset(mockRepoManagerService);
+    mockReset(mockAmqpService);
     mockReset(mockCrypto);
   });
 
@@ -70,7 +75,6 @@ describe('subscriptionService', () => {
         confirmed: true,
         confirm_token: 'token',
         unsubscribe_token: 'unsub',
-        created_at: new Date(),
       });
 
       await expect(
@@ -89,7 +93,6 @@ describe('subscriptionService', () => {
         confirmed: false,
         confirm_token: 'token',
         unsubscribe_token: 'unsub',
-        created_at: new Date(),
       });
       mockEmailService.sendConfirmationEmail.mockResolvedValue(undefined);
 
@@ -150,13 +153,29 @@ describe('subscriptionService', () => {
   });
 
   describe('unsubscribeFromRepo', () => {
-    it('should unsubscribe successfully', async () => {
+    it('should unsubscribe successfully and publish untrack command if no subscribers left', async () => {
       mockSubStore.getSubscriptionByUnsubscribeToken.mockResolvedValue({ id: 1, repo_name: 'owner/repo' } as unknown as Subscription);
+      mockSubStore.countSubscriptionsByRepoName.mockResolvedValue(0);
+      mockAmqpService.publish.mockResolvedValue(undefined);
 
       const result = await unsubscribeFromRepo('12345678-1234-1234-1234-123456789012', mockDeps);
 
       expect(result.status).toBe(SubscriptionResult.UNSUBSCRIBED);
       expect(mockSubStore.deleteSubscriptionById).toHaveBeenCalledWith(1);
+      expect(mockSubStore.countSubscriptionsByRepoName).toHaveBeenCalledWith('owner/repo');
+      expect(mockAmqpService.publish).toHaveBeenCalledWith('repository.untrack', { repo_name: 'owner/repo' });
+    });
+
+    it('should unsubscribe successfully and not publish untrack command if subscribers still exist', async () => {
+      mockSubStore.getSubscriptionByUnsubscribeToken.mockResolvedValue({ id: 1, repo_name: 'owner/repo' } as unknown as Subscription);
+      mockSubStore.countSubscriptionsByRepoName.mockResolvedValue(1);
+
+      const result = await unsubscribeFromRepo('12345678-1234-1234-1234-123456789012', mockDeps);
+
+      expect(result.status).toBe(SubscriptionResult.UNSUBSCRIBED);
+      expect(mockSubStore.deleteSubscriptionById).toHaveBeenCalledWith(1);
+      expect(mockSubStore.countSubscriptionsByRepoName).toHaveBeenCalledWith('owner/repo');
+      expect(mockAmqpService.publish).not.toHaveBeenCalled();
     });
 
     it('should throw NotFoundError for non-existent token', async () => {
@@ -180,6 +199,24 @@ describe('subscriptionService', () => {
       expect(result[0].email).toBe('test@example.com');
       expect(result[0].last_seen_tag).toBe('v1.0.0');
       expect(mockRepoManagerService.fetchLatestTags).toHaveBeenCalledWith(['owner/repo']);
+    });
+  });
+
+  describe('handleReleasePublishedEvent', () => {
+    it('should query confirmed subscribers and dispatch notification emails', async () => {
+      const mockPayload = { repo_name: 'owner/repo', tag_name: 'v2.0.0' };
+      const mockConfirmedSubscriptions = [
+        { email: 'user1@example.com', unsubscribe_token: 'unsub1' },
+        { email: 'user2@example.com', unsubscribe_token: 'unsub2' },
+      ];
+      mockSubStore.getConfirmedSubscriptionsByRepoName.mockResolvedValue(mockConfirmedSubscriptions);
+      mockEmailService.sendNotificationEmail.mockResolvedValue(undefined);
+
+      await handleReleasePublishedEvent(mockPayload, mockDeps);
+
+      expect(mockSubStore.getConfirmedSubscriptionsByRepoName).toHaveBeenCalledWith('owner/repo');
+      expect(mockEmailService.sendNotificationEmail).toHaveBeenCalledWith('user1@example.com', 'owner/repo', 'v2.0.0', 'unsub1');
+      expect(mockEmailService.sendNotificationEmail).toHaveBeenCalledWith('user2@example.com', 'owner/repo', 'v2.0.0', 'unsub2');
     });
   });
 });

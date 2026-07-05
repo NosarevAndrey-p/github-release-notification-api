@@ -20,6 +20,21 @@ services:
       timeout: 5s
       retries: 5
 
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    healthcheck:
+      test: ["CMD-SHELL", "rabbitmq-diagnostics -q ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   subscription-service:
     build:
       context: .
@@ -27,12 +42,15 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
     env_file:
       - .env
     environment:
       - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/subscription_db
       - REPO_MANAGER_SERVICE_URL=http://repo-manager-service:3002
       - EMAIL_SERVICE_URL=http://email-service:3003
+      - AMQP_URL=amqp://guest:guest@rabbitmq:5672
       - DB_MIGRATIONS_DIR=src/db/migrations
       - PORT=3000
       - LOG_DIR=/app/logs
@@ -46,12 +64,15 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
     env_file:
       - .env
     environment:
       - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/repo_manager_db
       - SUBSCRIPTION_SERVICE_URL=http://subscription-service:3000
       - EMAIL_SERVICE_URL=http://email-service:3003
+      - AMQP_URL=amqp://guest:guest@rabbitmq:5672
       - DB_MIGRATIONS_DIR=src/db/migrations
       - PORT=3002
       - LOG_DIR=/app/logs
@@ -62,10 +83,14 @@ services:
     build:
       context: .
       dockerfile: services/email-service/Dockerfile
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
     env_file:
       - .env
     environment:
       - BASE_URL=${BASE_URL:-http://localhost:3000}
+      - AMQP_URL=amqp://guest:guest@rabbitmq:5672
       - PORT=3003
       - LOG_DIR=/app/logs
     volumes:

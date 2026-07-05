@@ -50,13 +50,21 @@ export async function confirmSubscription(token: string, deps: SubscriptionDeps)
   return { status: SubscriptionResult.CONFIRMED };
 }
 
-export async function unsubscribeFromRepo(token: string, { subStore }: SubscriptionDeps) {
+export async function unsubscribeFromRepo(token: string, deps: SubscriptionDeps) {
+  const { subStore, amqpService } = deps;
   const sub = await subStore.getSubscriptionByUnsubscribeToken(token);
   if (!sub) {
     throw new NotFoundError('Token not found');
   }
 
   await subStore.deleteSubscriptionById(sub.id);
+
+  // If no remaining subscriptions exist for this repo, trigger untracking asynchronously
+  const remaining = await subStore.countSubscriptionsByRepoName(sub.repo_name);
+  if (remaining === 0) {
+    await amqpService.publish('repository.untrack', { repo_name: sub.repo_name });
+  }
+
   return { status: SubscriptionResult.UNSUBSCRIBED };
 }
 
@@ -75,4 +83,25 @@ export async function getSubscriptions(email: string, deps: SubscriptionDeps) {
     confirmed: row.confirmed,
     last_seen_tag: tags[row.repo] || null,
   }));
+}
+
+export async function handleReleasePublishedEvent(
+  payload: { repo_name: string; tag_name: string },
+  deps: SubscriptionDeps
+): Promise<void> {
+  const { repo_name, tag_name } = payload;
+  const subs = await deps.subStore.getConfirmedSubscriptionsByRepoName(repo_name);
+
+  for (const sub of subs) {
+    try {
+      await deps.emailService.sendNotificationEmail(
+        sub.email,
+        repo_name,
+        tag_name,
+        sub.unsubscribe_token
+      );
+    } catch (err) {
+      console.error(`Failed to dispatch notification for ${sub.email}:`, err);
+    }
+  }
 }

@@ -58,6 +58,7 @@ export default defineConfig({
         EMAIL_SERVICE_URL: 'http://127.0.0.1:8991',
         DB_MIGRATIONS_DIR: 'services/subscription-service/src/db/migrations',
         NODE_ENV: 'test',
+        AMQP_URL: 'amqp://guest:guest@127.0.0.1:5673',
       },
     },
     {
@@ -77,6 +78,7 @@ export default defineConfig({
         NODE_ENV: 'test',
         SCAN_INTERVAL: '1000', // Scan every 1 second for fast and natural E2E test scanning
         GITHUB_API_URL: 'http://127.0.0.1:3002', // Point to our mock GitHub server
+        AMQP_URL: 'amqp://guest:guest@127.0.0.1:5673',
       },
     },
     {
@@ -92,6 +94,7 @@ export default defineConfig({
         SMTP_PORT: '1025',
         BASE_URL: 'http://127.0.0.1:8989',
         NODE_ENV: 'test',
+        AMQP_URL: 'amqp://guest:guest@127.0.0.1:5673',
       },
     },
   ],

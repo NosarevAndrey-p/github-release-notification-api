@@ -3,6 +3,7 @@ export interface AppConfig {
   scanInterval: number;
   repoManagerServiceUrl: string;
   emailServiceUrl: string;
+  amqpUrl: string;
 }
 
 export interface DatabaseConfig {

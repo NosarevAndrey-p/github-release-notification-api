@@ -1,29 +1,14 @@
 import { IRepositoryStore, Repository } from '../types/database.js';
 import { IGitHubService } from '../types/github.js';
-import { IEmailService } from '../types/email.js';
 import { RateLimitError } from '../types/errors.js';
 import { ILogger } from '../types/logger.js';
+import { AmqpService } from './amqpService.js';
 
 export interface ScannerDeps {
   repoStore: IRepositoryStore;
   githubService: IGitHubService;
-  emailService: IEmailService;
   logger: ILogger;
-  subscriptionServiceUrl: string;
-}
-
-async function fetchSubscriptions(repo: string, subscriptionServiceUrl: string): Promise<{ email: string; unsubscribe_token: string }[] | null> {
-  try {
-    const res = await fetch(`${subscriptionServiceUrl}/api/internal/subscriptions?repo=${encodeURIComponent(repo)}`, {
-      signal: AbortSignal.timeout(5000),
-    });
-    if (res.ok) {
-      return await res.json() as { email: string; unsubscribe_token: string }[];
-    }
-  } catch {
-    // Return null to indicate network or communication error
-  }
-  return null;
+  amqpService: AmqpService;
 }
 
 export async function scan(deps: ScannerDeps) {
@@ -46,36 +31,20 @@ export async function scan(deps: ScannerDeps) {
 }
 
 async function processRepository(repo: Repository, deps: ScannerDeps) {
-  const { githubService, repoStore, emailService, logger, subscriptionServiceUrl } = deps;
+  const { githubService, repoStore, amqpService, logger } = deps;
   
   const release = await githubService.fetchLatestRelease(repo.full_name);
   if (!release || !release.tag_name || release.tag_name === repo.last_seen_tag) {
     return;
   }
 
-  const subscriptions = await fetchSubscriptions(repo.full_name, subscriptionServiceUrl);
-  if (subscriptions === null) {
-    logger.warn(`Failed to retrieve subscriber list for ${repo.full_name} from subscription service. Skipping notifications.`);
-    return;
-  }
+  logger.info(`New release detected for ${repo.full_name}: ${release.tag_name}. Publishing event...`);
 
-  if (subscriptions.length > 0) {
-    const notifications = subscriptions.map(sub =>
-      emailService.sendNotificationEmail(
-        sub.email,
-        repo.full_name,
-        release.tag_name!,
-        sub.unsubscribe_token
-      ).catch(error => {
-        logger.error(`Failed to email ${sub.email} for ${repo.full_name}:`, error);
-      })
-    );
-    await Promise.all(notifications);
-  } else {
-    logger.info(`No active subscriptions found for ${repo.full_name}. Deleting from tracked repositories.`);
-    await repoStore.deleteRepositoryById(repo.id);
-    return;
-  }
+  // Publish release.published event
+  await amqpService.publish('release.published', {
+    repo_name: repo.full_name,
+    tag_name: release.tag_name,
+  });
 
   await repoStore.updateRepositoryLastSeenTag(repo.id, release.tag_name);
 }

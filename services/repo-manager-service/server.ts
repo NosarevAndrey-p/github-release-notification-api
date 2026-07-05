@@ -2,15 +2,17 @@ import { createApp } from './src/app.js';
 import { scan } from './src/services/scannerService.js';
 import db from './src/db/database.js';
 import githubService from './src/services/githubService.js';
-import { EmailService } from './src/services/email/emailService.js';
+import { AmqpService } from './src/services/amqpService.js';
 import { logger } from './src/services/loggerService.js';
 import { config } from './src/config/index.js';
 
 await db.initSchema();
 
-const emailService = new EmailService({ 
-  emailServiceUrl: config.app.emailServiceUrl 
+const amqpService = new AmqpService({
+  amqpUrl: config.app.amqpUrl,
+  logger,
 });
+await amqpService.connect();
 
 const app = createApp({
   repoStore: db,
@@ -24,9 +26,8 @@ let isShuttingDown = false;
 const scannerDeps = { 
   repoStore: db, 
   githubService, 
-  emailService,
   logger,
-  subscriptionServiceUrl: config.app.subscriptionServiceUrl,
+  amqpService,
 };
 
 const runScanner = async () => {
@@ -41,6 +42,21 @@ const runScanner = async () => {
     }
   }
 };
+
+interface UntrackPayload {
+  repo_name: string;
+}
+
+await amqpService.setupQueue('repo_manager_untrack_queue', 'repository.untrack');
+await amqpService.consume<UntrackPayload>('repo_manager_untrack_queue', async (payload) => {
+  const { repo_name } = payload;
+  logger.info(`Received untrack command for repository: ${repo_name}`);
+  const repo = await db.getRepositoryByFullName(repo_name);
+  if (repo) {
+    await db.deleteRepositoryById(repo.id);
+    logger.info(`Successfully untracked repository: ${repo_name}`);
+  }
+});
 
 const server = app.listen(config.app.port, () => {
   logger.info(`Repo Manager Service running on port ${config.app.port}`);
@@ -57,10 +73,12 @@ const shutdown = async () => {
   server.close(async () => {
     logger.info('HTTP server closed.');
     try {
+      await amqpService.close();
+      logger.info('AMQP connection closed.');
       await db.close();
       logger.info('Database connections closed.');
     } catch (err) {
-      logger.error('Error during database close:', err);
+      logger.error('Error during database/AMQP close:', err);
     }
     process.exit(0);
   });

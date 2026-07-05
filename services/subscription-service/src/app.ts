@@ -16,10 +16,13 @@ const __dirname = path.dirname(__filename);
 
 import { IRepoManagerService } from './types/repo-manager.js';
 
+import { AmqpService } from './services/amqpService.js';
+
 export interface AppDeps {
   subStore: ISubscriptionStore;
   emailService: IEmailService;
   repoManagerService: IRepoManagerService;
+  amqpService: AmqpService;
   logger: ILogger;
   crypto: UUIDProvider;
 }

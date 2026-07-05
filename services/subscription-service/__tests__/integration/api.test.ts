@@ -10,6 +10,7 @@ import db from '../../src/db/database.js';
 import pg from 'pg';
 
 import { RepoManagerService } from '../../src/services/repo-manager/repoManagerService.js';
+import { AmqpService } from '../../src/services/amqpService.js';
 
 async function seedSubscription(params: {
   email?: string;
@@ -60,10 +61,13 @@ describe('API Routes (Integration)', () => {
       repoManagerServiceUrl: 'http://localhost:3002',
     });
 
+    const mockAmqpService = mock<AmqpService>();
+
     app = createApp({
       subStore: db,
       emailService: mockEmailService,
       repoManagerService,
+      amqpService: mockAmqpService,
       logger: mockLogger,
       crypto: mockCrypto,
     });
