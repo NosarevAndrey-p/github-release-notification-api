@@ -38,16 +38,26 @@ const server = app.listen(config.port, () => {
 
 const shutdown = async () => {
   logger.info('Graceful shutdown initiated...');
-  server.close(async () => {
+
+  // Force-exit if shutdown takes too long
+  setTimeout(() => {
+    logger.error('Graceful shutdown timed out, forcing exit.');
+    process.exit(1);
+  }, 10_000).unref();
+
+  try {
+    await new Promise<void>((resolve, reject) =>
+      server.close((err) => (err ? reject(err) : resolve()))
+    );
     logger.info('HTTP server closed.');
-    try {
-      await amqpService.close();
-      logger.info('AMQP connection closed.');
-    } catch (err) {
-      logger.error('Error closing AMQP:', err);
-    }
-    process.exit(0);
-  });
+
+    await amqpService.close();
+    logger.info('AMQP connection closed.');
+  } catch (err) {
+    logger.error('Error during shutdown:', err);
+  }
+
+  process.exit(0);
 };
 
 process.on('SIGTERM', shutdown);

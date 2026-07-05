@@ -7,7 +7,7 @@ export class AmqpService implements IAmqpService {
   private logger: ILogger;
   private connection: amqp.ChannelModel | null = null;
   private channel: amqp.Channel | null = null;
-  private readonly exchange = 'release_notifier_exchange';
+  private readonly exchange = 'app_events_exchange';
 
   constructor({ amqpUrl, logger }: AmqpConfig) {
     this.url = amqpUrl;
