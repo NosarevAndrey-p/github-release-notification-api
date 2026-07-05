@@ -38,6 +38,26 @@ function createApiRouter(deps: ApiDeps) {
   // Returns repository details (like last_seen_tag)
   apiRouter.get('/internal/repositories', async (req, res, next) => {
     try {
+      const reposParam = req.query.repos as string;
+      if (reposParam) {
+        const repoNames = reposParam.split(',').map(r => r.trim()).filter(Boolean);
+        repoNames.forEach(repoName => ValidatorService.validateRepo(repoName));
+
+        const repos = await deps.repoStore.getRepositoriesByFullNames(repoNames);
+        const tags: Record<string, string | null> = {};
+        
+        // Initialize all requested repos to null
+        repoNames.forEach(name => {
+          tags[name] = null;
+        });
+        // Override with database values
+        repos.forEach(repo => {
+          tags[repo.full_name] = repo.last_seen_tag;
+        });
+
+        return res.status(200).json(tags);
+      }
+
       const repoName = req.query.repo as string;
       ValidatorService.validateRepo(repoName);
 

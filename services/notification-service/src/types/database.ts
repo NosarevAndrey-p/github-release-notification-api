@@ -11,6 +11,7 @@ export interface DatabaseResult {
 
 export interface IRepositoryStore {
   getRepositoryByFullName(fullName: string): Promise<Repository | null>;
+  getRepositoriesByFullNames(fullNames: string[]): Promise<Repository[]>;
   createRepository(fullName: string, lastSeenTag: string | null): Promise<Repository>;
   getConfirmedRepositories(): Promise<Repository[]>;
   updateRepositoryLastSeenTag(repoId: number, lastSeenTag: string | null): Promise<DatabaseResult>;

@@ -43,11 +43,21 @@ export class NotificationService implements INotificationService {
   }
 
   async fetchLatestTags(repoNames: string[]): Promise<Record<string, string | null>> {
-    const tags: Record<string, string | null> = {};
-    const promises = repoNames.map(async (repo) => {
-      tags[repo] = await this.fetchLatestTag(repo);
+    if (repoNames.length === 0) return {};
+    try {
+      const reposParam = repoNames.map(r => encodeURIComponent(r)).join(',');
+      const res = await fetch(`${this.notificationServiceUrl}/api/internal/repositories?repos=${reposParam}`);
+      if (res.ok) {
+        return await res.json() as Record<string, string | null>;
+      }
+    } catch {
+      // Fallback
+    }
+
+    const fallback: Record<string, string | null> = {};
+    repoNames.forEach(r => {
+      fallback[r] = null;
     });
-    await Promise.all(promises);
-    return tags;
+    return fallback;
   }
 }

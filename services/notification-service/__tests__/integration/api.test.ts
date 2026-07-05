@@ -93,6 +93,22 @@ describe('API Routes (Notification Service Integration)', () => {
       expect(response.body.last_seen_tag).toBe('v1.1.0');
     });
 
+    it('should return bulk repository details if tracked', async () => {
+      await db.createRepository('owner/repo1', 'v1.1.0');
+      await db.createRepository('owner/repo2', null);
+
+      const response = await request(app)
+        .get('/api/internal/repositories')
+        .query({ repos: 'owner/repo1,owner/repo2,owner/repo3' });
+
+      expect(response.status).toBe(200);
+      expect(response.body).toEqual({
+        'owner/repo1': 'v1.1.0',
+        'owner/repo2': null,
+        'owner/repo3': null,
+      });
+    });
+
     it('should return 404 if repository is not tracked', async () => {
       const response = await request(app)
         .get('/api/internal/repositories')

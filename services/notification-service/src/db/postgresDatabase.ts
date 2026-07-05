@@ -7,6 +7,7 @@ const { Pool } = pg;
 
 const queries = {
   getRepositoryByFullName: 'SELECT * FROM repositories WHERE full_name = $1',
+  getRepositoriesByFullNames: 'SELECT * FROM repositories WHERE full_name = ANY($1::text[])',
   insertRepository: 'INSERT INTO repositories (full_name, last_seen_tag) VALUES ($1, $2) RETURNING id',
   getConfirmedRepositories: 'SELECT * FROM repositories',
   updateRepositoryLastSeenTag: 'UPDATE repositories SET last_seen_tag = $1 WHERE id = $2',
@@ -54,6 +55,11 @@ export default class PostgresDatabase implements IDatabaseClient {
 
   async getRepositoryByFullName(fullName: string): Promise<Repository | null> {
     return this.get<Repository>(queries.getRepositoryByFullName, [fullName]);
+  }
+
+  async getRepositoriesByFullNames(fullNames: string[]): Promise<Repository[]> {
+    if (fullNames.length === 0) return [];
+    return this.all<Repository>(queries.getRepositoriesByFullNames, [fullNames]);
   }
 
   async createRepository(fullName: string, lastSeenTag: string | null): Promise<Repository> {
