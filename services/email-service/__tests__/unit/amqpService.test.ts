@@ -18,7 +18,7 @@ jest.unstable_mockModule('amqplib', () => {
 });
 
 // Dynamically import after registering the mock module
-const amqp = await import('amqplib');
+await import('amqplib');
 const { AmqpService } = await import('../../src/services/amqpService.js');
 
 describe('AmqpService', () => {
