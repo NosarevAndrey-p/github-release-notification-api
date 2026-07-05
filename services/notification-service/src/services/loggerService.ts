@@ -12,7 +12,7 @@ const winstonLogger = winston.createLogger({
   transports: [
     new winston.transports.Console(),
     new winston.transports.File({
-      filename: path.join(process.cwd(), 'logs', 'app.log')
+      filename: path.join(process.env.LOG_DIR || path.join(process.cwd(), 'logs'), 'app.log')
     })
   ]
 });
