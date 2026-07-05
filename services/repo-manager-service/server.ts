@@ -3,6 +3,7 @@ import { scan, handleUntrackEvent } from './src/services/scannerService.js';
 import db from './src/db/database.js';
 import githubService from './src/services/githubService.js';
 import { AmqpService } from './src/services/amqpService.js';
+import { UntrackPayload } from './src/types/amqp.js';
 import { logger } from './src/services/loggerService.js';
 import { config } from './src/config/index.js';
 
@@ -43,9 +44,6 @@ const runScanner = async () => {
   }
 };
 
-interface UntrackPayload {
-  repo_name: string;
-}
 
 await amqpService.setupQueue('repo_manager_untrack_queue', 'repository.untrack');
 await amqpService.consume<UntrackPayload>('repo_manager_untrack_queue', async (payload) => {

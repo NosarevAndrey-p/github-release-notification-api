@@ -3,6 +3,7 @@ import db from './src/db/database.js';
 import { EmailService } from './src/services/email/emailService.js';
 import { RepoManagerService } from './src/services/repo-manager/repoManagerService.js';
 import { AmqpService } from './src/services/amqpService.js';
+import { ReleasePublishedPayload } from './src/types/amqp.js';
 import { handleReleasePublishedEvent } from './src/services/subscriptionService.js';
 import { logger } from './src/services/loggerService.js';
 import { config } from './src/config/index.js';
@@ -41,11 +42,6 @@ const subscriptionDeps = {
   crypto,
   logger,
 };
-
-interface ReleasePublishedPayload {
-  repo_name: string;
-  tag_name: string;
-}
 
 await amqpService.setupQueue('scanner_release_queue', 'release.*');
 await amqpService.consume<ReleasePublishedPayload>('scanner_release_queue', async (payload) => {

@@ -12,3 +12,7 @@ export interface IAmqpService {
   consume<T>(queueName: string, onMessage: (payload: T) => Promise<void>): Promise<void>;
   close(): Promise<void>;
 }
+
+export interface UntrackPayload {
+  repo_name: string;
+}
