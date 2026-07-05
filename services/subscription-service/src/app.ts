@@ -43,8 +43,11 @@ export function createApp(deps: AppDeps) {
     res.end(await client.register.metrics());
   });
 
-  // Serve static files from /public
-  app.use(express.static(path.resolve(__dirname, '../public')));
+  // Serve static files from /public (checking if we are running precompiled code or development source)
+  const publicPath = __dirname.includes('dist')
+    ? path.resolve(__dirname, '../../public')
+    : path.resolve(__dirname, '../public');
+  app.use(express.static(publicPath));
 
   app.use('/api',
     createApiRouter({ 
