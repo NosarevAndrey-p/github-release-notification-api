@@ -19,6 +19,17 @@ const app = createApp({
   logger,
 });
 
-app.listen(config.port, () => {
+const server = app.listen(config.port, () => {
   logger.info(`Email Service running on port ${config.port}`);
 });
+
+const shutdown = async () => {
+  logger.info('Graceful shutdown initiated...');
+  server.close(() => {
+    logger.info('HTTP server closed. Shutdown complete.');
+    process.exit(0);
+  });
+};
+
+process.on('SIGTERM', shutdown);
+process.on('SIGINT', shutdown);

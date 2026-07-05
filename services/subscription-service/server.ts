@@ -24,6 +24,23 @@ const app = createApp({
   crypto,
 });
 
-app.listen(config.app.port, () => {
+const server = app.listen(config.app.port, () => {
   logger.info(`Subscription Service running on port ${config.app.port}`);
 });
+
+const shutdown = async () => {
+  logger.info('Graceful shutdown initiated...');
+  server.close(async () => {
+    logger.info('HTTP server closed.');
+    try {
+      await db.close();
+      logger.info('Database connections closed.');
+    } catch (err) {
+      logger.error('Error during database close:', err);
+    }
+    process.exit(0);
+  });
+};
+
+process.on('SIGTERM', shutdown);
+process.on('SIGINT', shutdown);

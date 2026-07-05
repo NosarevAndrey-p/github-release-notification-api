@@ -18,26 +18,53 @@ const app = createApp({
   logger,
 });
 
-app.listen(config.app.port, () => {
-  logger.info(`Notification Service running on port ${config.app.port}`);
+let scannerTimeoutId: NodeJS.Timeout | null = null;
+let isShuttingDown = false;
 
-  const scannerDeps = { 
-    repoStore: db, 
-    githubService, 
-    emailService,
-    logger,
-    subscriptionServiceUrl: config.app.subscriptionServiceUrl,
-  };
+const scannerDeps = { 
+  repoStore: db, 
+  githubService, 
+  emailService,
+  logger,
+  subscriptionServiceUrl: config.app.subscriptionServiceUrl,
+};
 
-  const runScanner = async () => {
-    try {
-      await scan(scannerDeps);
-    } catch (error) {
-      logger.error('Scanner error:', error);
-    } finally {
-      setTimeout(runScanner, config.app.scanInterval);
+const runScanner = async () => {
+  if (isShuttingDown) return;
+  try {
+    await scan(scannerDeps);
+  } catch (error) {
+    logger.error('Scanner error:', error);
+  } finally {
+    if (!isShuttingDown) {
+      scannerTimeoutId = setTimeout(runScanner, config.app.scanInterval);
     }
-  };
+  }
+};
 
+const server = app.listen(config.app.port, () => {
+  logger.info(`Notification Service running on port ${config.app.port}`);
   runScanner();
 });
+
+const shutdown = async () => {
+  logger.info('Graceful shutdown initiated...');
+  isShuttingDown = true;
+  if (scannerTimeoutId) {
+    clearTimeout(scannerTimeoutId);
+    logger.info('Scanner schedule stopped.');
+  }
+  server.close(async () => {
+    logger.info('HTTP server closed.');
+    try {
+      await db.close();
+      logger.info('Database connections closed.');
+    } catch (err) {
+      logger.error('Error during database close:', err);
+    }
+    process.exit(0);
+  });
+};
+
+process.on('SIGTERM', shutdown);
+process.on('SIGINT', shutdown);
