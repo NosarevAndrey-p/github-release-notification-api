@@ -130,11 +130,23 @@ describe('subscriptionService', () => {
 
   describe('confirmSubscription', () => {
     it('should confirm subscription successfully', async () => {
-      mockSubStore.getSubscriptionByConfirmToken.mockResolvedValue({ id: 1, confirmed: false } as unknown as Subscription);
+      mockSubStore.getSubscriptionByConfirmToken.mockResolvedValue({ id: 1, repo_name: 'owner/repo', confirmed: false } as unknown as Subscription);
+      mockFetch.mockResolvedValue({
+        status: 200,
+        ok: true,
+        json: async () => ({ id: 1, full_name: 'owner/repo', last_seen_tag: 'v1.0' }),
+      } as unknown as Response);
 
       const result = await confirmSubscription('12345678-1234-1234-1234-123456789012', mockDeps);
 
       expect(result.status).toBe(SubscriptionResult.CONFIRMED);
+      expect(mockFetch).toHaveBeenCalledWith(
+        'http://localhost:3002/api/internal/repositories',
+        expect.objectContaining({
+          method: 'POST',
+          body: JSON.stringify({ repo_name: 'owner/repo' }),
+        })
+      );
       expect(mockSubStore.updateSubscriptionConfirmed).toHaveBeenCalledWith(1);
     });
 

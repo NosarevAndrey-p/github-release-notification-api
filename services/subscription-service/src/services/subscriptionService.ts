@@ -63,7 +63,8 @@ export async function subscribeToRepo({ email, repo }: { email: string; repo: st
   return { status: SubscriptionResult.CREATED };
 }
 
-export async function confirmSubscription(token: string, { subStore }: SubscriptionDeps) {
+export async function confirmSubscription(token: string, deps: SubscriptionDeps) {
+  const { subStore, notificationServiceUrl } = deps;
   const sub = await subStore.getSubscriptionByConfirmToken(token);
   if (!sub) {
     throw new NotFoundError('Token not found');
@@ -71,6 +72,21 @@ export async function confirmSubscription(token: string, { subStore }: Subscript
 
   if (sub.confirmed) {
     return { status: SubscriptionResult.ALREADY_CONFIRMED };
+  }
+
+  const notificationUrl = notificationServiceUrl || 'http://localhost:3002';
+  try {
+    const res = await fetch(`${notificationUrl}/api/internal/repositories`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ repo_name: sub.repo_name }),
+    });
+
+    if (!res.ok) {
+      throw new Error(`Notification service returned ${res.status}`);
+    }
+  } catch (err) {
+    throw new Error(`Failed to contact notification service on confirmation: ${err instanceof Error ? err.message : String(err)}`, { cause: err });
   }
 
   await subStore.updateSubscriptionConfirmed(sub.id);

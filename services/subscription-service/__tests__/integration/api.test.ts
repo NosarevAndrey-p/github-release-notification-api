@@ -167,6 +167,11 @@ describe('API Routes (Integration)', () => {
   describe('GET /api/confirm/:token', () => {
     it('should return 200 on successful confirmation', async () => {
       await seedSubscription({ repo: 'owner/repo' });
+      mockFetch.mockResolvedValue({
+        status: 200,
+        ok: true,
+        json: async () => ({ id: 1, full_name: 'owner/repo', last_seen_tag: 'v1.0' }),
+      } as unknown as Response);
 
       const response = await request(app).get('/api/confirm/12345678-1234-1234-1234-123456789012');
 
