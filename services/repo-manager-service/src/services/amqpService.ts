@@ -1,16 +1,8 @@
 import amqp from 'amqplib';
+import { ILogger } from '../types/logger.js';
+import { IAmqpService, AmqpConfig } from '../types/amqp.js';
 
-export interface ILogger {
-  info(message: string, ...meta: unknown[]): void;
-  error(message: string, ...meta: unknown[]): void;
-}
-
-export interface AmqpConfig {
-  amqpUrl: string;
-  logger: ILogger;
-}
-
-export class AmqpService {
+export class AmqpService implements IAmqpService {
   private url: string;
   private logger: ILogger;
   private connection: amqp.ChannelModel | null = null;
