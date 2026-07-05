@@ -1,7 +1,7 @@
 import { ISubscriptionStore } from './database.js';
 import { IEmailService } from './email.js';
 
-import { INotificationService } from './notification.js';
+import { IRepoManagerService } from './repo-manager.js';
 
 export enum SubscriptionResult {
   CREATED = 'subscription.created',
@@ -18,7 +18,7 @@ export interface UUIDProvider {
 export interface SubscriptionDeps {
   subStore: ISubscriptionStore;
   emailService: IEmailService;
-  notificationService: INotificationService;
+  repoManagerService: IRepoManagerService;
   crypto: UUIDProvider;
 }
 

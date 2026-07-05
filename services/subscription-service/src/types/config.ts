@@ -1,7 +1,7 @@
 export interface AppConfig {
   port: number;
   scanInterval: number;
-  notificationServiceUrl: string;
+  repoManagerServiceUrl: string;
   emailServiceUrl: string;
 }
 

@@ -43,7 +43,7 @@ const runScanner = async () => {
 };
 
 const server = app.listen(config.app.port, () => {
-  logger.info(`Notification Service running on port ${config.app.port}`);
+  logger.info(`Repo Manager Service running on port ${config.app.port}`);
   runScanner();
 });
 

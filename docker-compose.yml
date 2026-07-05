@@ -10,7 +10,7 @@ services:
       POSTGRES_DB: postgres
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
-      POSTGRES_MULTIPLE_DATABASES: subscription_db,notification_db
+      POSTGRES_MULTIPLE_DATABASES: subscription_db,repo_manager_db
     volumes: 
       - db-data:/var/lib/postgresql/data
       - ./infrastructure/db/init-multiple-databases.sh:/docker-entrypoint-initdb.d/init-multiple-databases.sh:ro
@@ -31,7 +31,7 @@ services:
       - .env
     environment:
       - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/subscription_db
-      - NOTIFICATION_SERVICE_URL=http://notification-service:3002
+      - REPO_MANAGER_SERVICE_URL=http://repo-manager-service:3002
       - EMAIL_SERVICE_URL=http://email-service:3003
       - DB_MIGRATIONS_DIR=src/db/migrations
       - PORT=3000
@@ -39,24 +39,24 @@ services:
     volumes:
       - subscription-logs:/app/logs
 
-  notification-service:
+  repo-manager-service:
     build:
       context: .
-      dockerfile: services/notification-service/Dockerfile
+      dockerfile: services/repo-manager-service/Dockerfile
     depends_on:
       db:
         condition: service_healthy
     env_file:
       - .env
     environment:
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/notification_db
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/repo_manager_db
       - SUBSCRIPTION_SERVICE_URL=http://subscription-service:3000
       - EMAIL_SERVICE_URL=http://email-service:3003
       - DB_MIGRATIONS_DIR=src/db/migrations
       - PORT=3002
       - LOG_DIR=/app/logs
     volumes:
-      - notification-logs:/app/logs
+      - repo-manager-logs:/app/logs
 
   email-service:
     build:
@@ -90,7 +90,7 @@ services:
       - ./infrastructure/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
     depends_on:
       - subscription-service
-      - notification-service
+      - repo-manager-service
       - email-service
 
   grafana:
@@ -143,14 +143,14 @@ services:
       - ./infrastructure/fluent-bit/fluent-bit.conf:/fluent-bit/etc/fluent-bit.conf
       - ./infrastructure/fluent-bit/parsers.conf:/fluent-bit/etc/parsers.conf
       - subscription-logs:/var/log/app/subscription
-      - notification-logs:/var/log/app/notification
+      - repo-manager-logs:/var/log/app/repo-manager
       - email-logs:/var/log/app/email
     depends_on:
       elasticsearch:
         condition: service_healthy
       subscription-service:
         condition: service_started
-      notification-service:
+      repo-manager-service:
         condition: service_started
       email-service:
         condition: service_started
@@ -159,5 +159,5 @@ volumes:
   db-data:
   es-data:
   subscription-logs:
-  notification-logs:
+  repo-manager-logs:
   email-logs:

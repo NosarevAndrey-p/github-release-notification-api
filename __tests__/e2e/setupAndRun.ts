@@ -35,7 +35,7 @@ async function main() {
 
     console.info('[E2E Setup] Ensuring test databases exist...');
     await createDatabaseIfNotExists('subscription_test_db', postgresBaseUrl);
-    await createDatabaseIfNotExists('notification_test_db', postgresBaseUrl);
+    await createDatabaseIfNotExists('repo_manager_test_db', postgresBaseUrl);
 
     console.info('[E2E Setup] Running database migrations...');
     
@@ -46,12 +46,12 @@ async function main() {
     await subClient.end();
     console.info('[E2E Setup] Subscription service migrations executed successfully.');
 
-    // Run notification migrations
-    const notifClient = new pg.Client({ connectionString: 'postgresql://postgres:postgres@127.0.0.1:5434/notification_test_db' });
+    // Run repo-manager migrations
+    const notifClient = new pg.Client({ connectionString: 'postgresql://postgres:postgres@127.0.0.1:5434/repo_manager_test_db' });
     await notifClient.connect();
-    await migrate({ client: notifClient }, path.resolve(__dirname, '../../services/notification-service/src/db/migrations'));
+    await migrate({ client: notifClient }, path.resolve(__dirname, '../../services/repo-manager-service/src/db/migrations'));
     await notifClient.end();
-    console.info('[E2E Setup] Notification service migrations executed successfully.');
+    console.info('[E2E Setup] Repo manager service migrations executed successfully.');
 
     console.info('[E2E Setup] Running Playwright E2E tests...');
     execSync('npx playwright test', { stdio: 'inherit' });

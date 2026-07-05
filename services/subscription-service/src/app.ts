@@ -14,12 +14,12 @@ import { UUIDProvider } from './types/subscription.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-import { INotificationService } from './types/notification.js';
+import { IRepoManagerService } from './types/repo-manager.js';
 
-interface AppDeps {
+export interface AppDeps {
   subStore: ISubscriptionStore;
   emailService: IEmailService;
-  notificationService: INotificationService;
+  repoManagerService: IRepoManagerService;
   logger: ILogger;
   crypto: UUIDProvider;
 }

@@ -1,16 +1,16 @@
-import { INotificationService, NotificationDeps } from '../../types/notification.js';
+import { IRepoManagerService, RepoManagerDeps } from '../../types/repo-manager.js';
 import { NotFoundError } from '../../types/errors.js';
 
-export class NotificationService implements INotificationService {
-  private notificationServiceUrl: string;
+export class RepoManagerService implements IRepoManagerService {
+  private repoManagerServiceUrl: string;
 
-  constructor({ notificationServiceUrl }: NotificationDeps) {
-    this.notificationServiceUrl = notificationServiceUrl;
+  constructor({ repoManagerServiceUrl }: RepoManagerDeps) {
+    this.repoManagerServiceUrl = repoManagerServiceUrl;
   }
 
   async registerRepository(repoName: string): Promise<void> {
     try {
-      const res = await fetch(`${this.notificationServiceUrl}/api/internal/repositories`, {
+      const res = await fetch(`${this.repoManagerServiceUrl}/api/internal/repositories`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ repo_name: repoName }),
@@ -22,17 +22,17 @@ export class NotificationService implements INotificationService {
       }
 
       if (!res.ok) {
-        throw new Error(`Notification service returned ${res.status}`);
+        throw new Error(`Repo manager service returned ${res.status}`);
       }
     } catch (err) {
       if (err instanceof NotFoundError) throw err;
-      throw new Error(`Failed to contact notification service: ${err instanceof Error ? err.message : String(err)}`, { cause: err });
+      throw new Error(`Failed to contact repo manager service: ${err instanceof Error ? err.message : String(err)}`, { cause: err });
     }
   }
 
   async fetchLatestTag(repoName: string): Promise<string | null> {
     try {
-      const res = await fetch(`${this.notificationServiceUrl}/api/internal/repositories?repo=${encodeURIComponent(repoName)}`, {
+      const res = await fetch(`${this.repoManagerServiceUrl}/api/internal/repositories?repo=${encodeURIComponent(repoName)}`, {
         signal: AbortSignal.timeout(5000),
       });
       if (res.ok) {
@@ -49,7 +49,7 @@ export class NotificationService implements INotificationService {
     if (repoNames.length === 0) return {};
     try {
       const reposParam = repoNames.map(r => encodeURIComponent(r)).join(',');
-      const res = await fetch(`${this.notificationServiceUrl}/api/internal/repositories?repos=${reposParam}`, {
+      const res = await fetch(`${this.repoManagerServiceUrl}/api/internal/repositories?repos=${reposParam}`, {
         signal: AbortSignal.timeout(5000),
       });
       if (res.ok) {

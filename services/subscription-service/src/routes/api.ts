@@ -9,12 +9,12 @@ import { ISubscriptionStore } from '../types/database.js';
 import { IEmailService } from '../types/email.js';
 import { ValidatorService } from '../services/validatorService.js';
 import { UUIDProvider, SubscriptionResult } from '../types/subscription.js';
-import { INotificationService } from '../types/notification.js';
+import { IRepoManagerService } from '../types/repo-manager.js';
 
 interface ApiDeps {
   subStore: ISubscriptionStore;
   emailService: IEmailService;
-  notificationService: INotificationService;
+  repoManagerService: IRepoManagerService;
   crypto: UUIDProvider;
 }
 

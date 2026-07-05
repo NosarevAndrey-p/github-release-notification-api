@@ -5,7 +5,7 @@ import {
 } from '../types/errors.js';
 
 export async function subscribeToRepo({ email, repo }: { email: string; repo: string }, deps: SubscriptionDeps) {
-  const existing = await deps.subStore.getSubscriptionByEmailAndRepoName(email, repo);
+  const existing = await deps.subStore.getSubscriptionByEmailAndRepoName(email, repo); 
   if (existing) {
     if (existing.confirmed) {
       throw new ConflictError('email already subscribed to this repository');
@@ -15,7 +15,7 @@ export async function subscribeToRepo({ email, repo }: { email: string; repo: st
     return { status: SubscriptionResult.RESENT };
   }
 
-  await deps.notificationService.registerRepository(repo);
+  await deps.repoManagerService.registerRepository(repo);
 
   const confirmToken = deps.crypto.randomUUID();
   const unsubscribeToken = deps.crypto.randomUUID();
@@ -27,7 +27,7 @@ export async function subscribeToRepo({ email, repo }: { email: string; repo: st
 }
 
 export async function confirmSubscription(token: string, deps: SubscriptionDeps) {
-  const { subStore, notificationService } = deps;
+  const { subStore, repoManagerService } = deps;
   const sub = await subStore.getSubscriptionByConfirmToken(token);
   if (!sub) {
     throw new NotFoundError('Token not found');
@@ -37,7 +37,7 @@ export async function confirmSubscription(token: string, deps: SubscriptionDeps)
     return { status: SubscriptionResult.ALREADY_CONFIRMED };
   }
 
-  await notificationService.registerRepository(sub.repo_name);
+  await repoManagerService.registerRepository(sub.repo_name);
 
   await subStore.updateSubscriptionConfirmed(sub.id);
   return { status: SubscriptionResult.CONFIRMED };
@@ -60,7 +60,7 @@ export async function getSubscriptions(email: string, deps: SubscriptionDeps) {
   }
 
   const repos = Array.from(new Set(rows.map(row => row.repo)));
-  const tags = await deps.notificationService.fetchLatestTags(repos);
+  const tags = await deps.repoManagerService.fetchLatestTags(repos);
 
   return rows.map(row => new SubscriptionModel({
     email: row.email,
