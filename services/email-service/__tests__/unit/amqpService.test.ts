@@ -1,12 +1,13 @@
 import { jest } from '@jest/globals';
-import amqp from 'amqplib';
-import { AmqpService } from '../../src/services/amqpService.js';
-import { ILogger } from '../../src/types/logger.js';
 import { mock, mockReset } from 'jest-mock-extended';
+import { ILogger } from '../../src/types/logger.js';
+import type amqpType from 'amqplib';
 
-// Mock amqplib properly for ESM default/named imports
-const mockConnect = jest.fn<() => Promise<amqp.Connection>>();
-jest.mock('amqplib', () => {
+// Declare mockConnect first
+const mockConnect = jest.fn<() => Promise<amqpType.Connection>>();
+
+// Set up the ESM mock before importing modules
+jest.unstable_mockModule('amqplib', () => {
   return {
     __esModule: true,
     default: {
@@ -16,11 +17,15 @@ jest.mock('amqplib', () => {
   };
 });
 
+// Dynamically import after registering the mock module
+const amqp = await import('amqplib');
+const { AmqpService } = await import('../../src/services/amqpService.js');
+
 describe('AmqpService', () => {
-  let amqpService: AmqpService;
+  let amqpService: InstanceType<typeof AmqpService>;
   const mockLogger = mock<ILogger>();
-  const mockChannel = mock<amqp.Channel>();
-  const mockConnection = mock<amqp.ChannelModel>();
+  const mockChannel = mock<amqpType.Channel>();
+  const mockConnection = mock<amqpType.ChannelModel>();
 
   beforeEach(() => {
     mockReset(mockLogger);
@@ -38,7 +43,7 @@ describe('AmqpService', () => {
     mockConnection.createChannel.mockResolvedValue(mockChannel);
     mockConnection.close.mockResolvedValue(undefined);
 
-    mockConnect.mockResolvedValue(mockConnection as unknown as amqp.Connection);
+    mockConnect.mockResolvedValue(mockConnection as unknown as amqpType.Connection);
 
     amqpService = new AmqpService({
       amqpUrl: 'amqp://localhost',
@@ -52,8 +57,8 @@ describe('AmqpService', () => {
     });
 
     it('should successfully parse a valid message, invoke callback, and call ack', async () => {
-      let consumeCallback: ((msg: amqp.ConsumeMessage | null) => void | Promise<void>) | null = null;
-      mockChannel.consume.mockImplementation(async (_queue: string, callback: (msg: amqp.ConsumeMessage | null) => void) => {
+      let consumeCallback: ((msg: amqpType.ConsumeMessage | null) => void | Promise<void>) | null = null;
+      mockChannel.consume.mockImplementation(async (_queue: string, callback: (msg: amqpType.ConsumeMessage | null) => void) => {
         consumeCallback = callback;
         return { consumerTag: 'mock-tag' };
       });
@@ -66,7 +71,7 @@ describe('AmqpService', () => {
 
       const mockMsg = {
         content: Buffer.from(JSON.stringify({ value: 'hello' })),
-      } as amqp.ConsumeMessage;
+      } as amqpType.ConsumeMessage;
 
       await consumeCallback!(mockMsg);
 
@@ -76,8 +81,8 @@ describe('AmqpService', () => {
     });
 
     it('should nack with requeue=false when parsing or processing throws an error', async () => {
-      let consumeCallback: ((msg: amqp.ConsumeMessage | null) => void | Promise<void>) | null = null;
-      mockChannel.consume.mockImplementation(async (_queue: string, callback: (msg: amqp.ConsumeMessage | null) => void) => {
+      let consumeCallback: ((msg: amqpType.ConsumeMessage | null) => void | Promise<void>) | null = null;
+      mockChannel.consume.mockImplementation(async (_queue: string, callback: (msg: amqpType.ConsumeMessage | null) => void) => {
         consumeCallback = callback;
         return { consumerTag: 'mock-tag' };
       });
@@ -87,7 +92,7 @@ describe('AmqpService', () => {
 
       const mockMsg = {
         content: Buffer.from(JSON.stringify({ value: 'hello' })),
-      } as amqp.ConsumeMessage;
+      } as amqpType.ConsumeMessage;
 
       await consumeCallback!(mockMsg);
 
@@ -98,8 +103,8 @@ describe('AmqpService', () => {
     });
 
     it('should return early if msg is null', async () => {
-      let consumeCallback: ((msg: amqp.ConsumeMessage | null) => void | Promise<void>) | null = null;
-      mockChannel.consume.mockImplementation(async (_queue: string, callback: (msg: amqp.ConsumeMessage | null) => void) => {
+      let consumeCallback: ((msg: amqpType.ConsumeMessage | null) => void | Promise<void>) | null = null;
+      mockChannel.consume.mockImplementation(async (_queue: string, callback: (msg: amqpType.ConsumeMessage | null) => void) => {
         consumeCallback = callback;
         return { consumerTag: 'mock-tag' };
       });
