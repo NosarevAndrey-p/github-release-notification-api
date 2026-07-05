@@ -2,19 +2,22 @@
 
 A microservices-based system that allows users to subscribe to email notifications whenever a new release is published on a chosen GitHub repository. 
 
-The system is refactored from a monolith into two specialized microservices organized as a monorepo using npm workspaces.
+The system is split into three specialized microservices organized as a monorepo using npm workspaces.
 
 ---
 
 ## Features
 
 - **Web Dashboard:** A clean, responsive dark-themed user interface to manage subscriptions, view statuses, and add new repos directly from your browser.
-- **Microservice Architecture:** Decoupled into `subscription-service` (User UI & API) and `notification-service` (Background polling and email notifications).
+- **Microservices Architecture:** Decoupled into:
+  - `subscription-service` (User UI & Core API)
+  - `notification-service` (Background polling/release monitoring)
+  - `email-service` (Stateless email rendering and SMTP dispatching)
 - **Database-per-Service Isolation:** Separate databases (`subscription_db` and `notification_db`) run within a single Postgres container, ensuring schema isolation and logical autonomy.
-- **Inter-service REST Sync:** The two services communicate using direct internal REST HTTP endpoints.
+- **Inter-service REST Sync:** The microservices communicate using direct internal REST HTTP endpoints.
 - **Self-Healing Scanner:** The background scanner deletes tracked repositories automatically if the `subscription-service` indicates that they have `0` active subscribers, halting redundant API polling.
 - **Robust Schema Migrations**: Runs separate programmatic database schema migrations on service start via `postgres-migrations`.
-- **Fully Containerized**: Packaged with Docker, Docker Compose, Nginx, prometheus, Fluent Bit, Elasticsearch, Kibana, and Grafana.
+- **Fully Containerized**: Packaged with Docker, Docker Compose, Nginx, Prometheus, Fluent Bit, Elasticsearch, Kibana, and Grafana.
 
 ---
 
@@ -24,7 +27,8 @@ This project uses npm workspaces to organize components:
 ```
 ├── services/
 │   ├── subscription-service/   # Service A (UI, REST API, subscription_db)
-│   └── notification-service/   # Service B (Scanner, Emailer, notification_db)
+│   ├── notification-service/   # Service B (Scanner, notification_db)
+│   └── email-service/          # Service C (Stateless EJS template renderer & SMTP)
 ├── __tests__/
 │   └── e2e/                     # Global Playwright System E2E tests
 ├── infrastructure/              # Nginx, Fluent Bit, Prometheus, Grafana, and DB configs
@@ -43,7 +47,7 @@ This project uses npm workspaces to organize components:
 1. Clone the repository and configure `.env`:
    ```bash
    cp .env.example .env
-   # Edit .env with your SMTP credentials and optional GITHUB_TOKEN
+   # Edit .env with your SMTP credentials, BASE_URL, and GITHUB_TOKEN
    ```
 
 2. Start all services in the background:
@@ -53,7 +57,8 @@ This project uses npm workspaces to organize components:
    This command starts:
    - `db` — PostgreSQL running both `subscription_db` and `notification_db`.
    - `subscription-service` — public web server on port `3000` (via Nginx proxy).
-   - `notification-service` — scanner and emailer on port `3002`.
+   - `notification-service` — release scanner on port `3002`.
+   - `email-service` — email rendering and dispatching utility on port `3003`.
    - `nginx` — reverse proxy routing port `3000` traffic.
    - `elasticsearch` & `kibana` — central log collection and searching (port `5601`).
    - `fluent-bit` — log scraper routing log files to Elasticsearch.
@@ -86,6 +91,7 @@ This project uses npm workspaces to organize components:
 3. Start services locally using monorepo workspace scripts:
    - **Start Subscription Service**: `npm run dev:subscription` (starts watch mode on port 3000)
    - **Start Notification Service**: `npm run dev:notification` (starts watch mode on port 3002)
+   - **Start Email Service**: `npm run dev:email` (starts watch mode on port 3003)
 
 ---
 
@@ -101,26 +107,7 @@ For detailed, step-by-step instructions on running unit tests, integration tests
   ```bash
   npm run test:integration
   ```
-* **E2E Tests (Global Suite)**:
+* **E2E Tests (Playwright)**:
   ```bash
   npm run test:e2e
   ```
-* **Run Everything sequentially**:
-  ```bash
-  npm run test:all
-  ```
-
----
-
-## Observability Dashboards
-
-- **Web Dashboard**: `http://localhost:3000/` (reverse proxied via Nginx)
-- **Kibana (Logs)**: `http://localhost:5601` (search index `app-logs`)
-- **Prometheus (Metrics targets)**: `http://localhost:9090` (scrapes both services)
-- **Grafana (Dashboards)**: `http://localhost:3001` (Default: `admin` / `admin`)
-
----
-
-## API Documentation
-
-The full API specification is available in `swagger.yaml`. Paste the contents into [https://editor.swagger.io/](https://editor.swagger.io/) to view it interactively.
