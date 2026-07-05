@@ -1,36 +1,21 @@
 import { jest } from '@jest/globals';
 import { mock, mockReset } from 'jest-mock-extended';
-import { ILogger } from '../../src/types/logger.js';
+import { ILogger } from '@shared/logger';
+import { AmqpService } from '@shared/amqp';
 import type amqpType from 'amqplib';
 
-// Declare mockConnect first
-const mockConnect = jest.fn<() => Promise<amqpType.Connection>>();
-
-// Set up the ESM mock before importing modules
-jest.unstable_mockModule('amqplib', () => {
-  return {
-    __esModule: true,
-    default: {
-      connect: mockConnect,
-    },
-    connect: mockConnect,
-  };
-});
-
-// Dynamically import after registering the mock module
-await import('amqplib');
-const { AmqpService } = await import('../../src/services/amqpService.js');
-
 describe('AmqpService', () => {
-  let amqpService: InstanceType<typeof AmqpService>;
+  let amqpService: AmqpService;
   const mockLogger = mock<ILogger>();
   const mockChannel = mock<amqpType.Channel>();
   const mockConnection = mock<amqpType.ChannelModel>();
+  const mockAmqpLib = mock<typeof amqpType>();
 
   beforeEach(() => {
     mockReset(mockLogger);
     mockReset(mockChannel);
     mockReset(mockConnection);
+    mockReset(mockAmqpLib);
     jest.clearAllMocks();
 
     mockChannel.assertExchange.mockResolvedValue({ exchange: 'app_events_exchange' });
@@ -43,11 +28,12 @@ describe('AmqpService', () => {
     mockConnection.createChannel.mockResolvedValue(mockChannel);
     mockConnection.close.mockResolvedValue(undefined);
 
-    mockConnect.mockResolvedValue(mockConnection as unknown as amqpType.Connection);
+    mockAmqpLib.connect.mockResolvedValue(mockConnection as unknown as amqpType.Connection);
 
     amqpService = new AmqpService({
       amqpUrl: 'amqp://localhost',
       logger: mockLogger,
+      amqpLib: mockAmqpLib,
     });
   });
 

@@ -1,7 +1,7 @@
 import { ISubscriptionStore } from './database.js';
 import { IEmailService } from './email.js';
 import { IRepoManagerService } from './repo-manager.js';
-import { ILogger } from './logger.js';
+import { ILogger } from '@shared/logger';
 
 export enum SubscriptionResult {
   CREATED = 'subscription.created',
@@ -15,7 +15,7 @@ export interface UUIDProvider {
   randomUUID: () => string;
 }
 
-import { IAmqpService } from './amqp.js';
+import { IAmqpService } from '@shared/amqp';
 
 export interface SubscriptionDeps {
   subStore: ISubscriptionStore;

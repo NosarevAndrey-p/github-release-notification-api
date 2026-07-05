@@ -3,7 +3,7 @@ import { Express } from 'express';
 import { createApp } from '../../src/app.js';
 import { mock, mockReset } from 'jest-mock-extended';
 import { IGitHubService } from '../../src/types/github.js';
-import { ILogger } from '../../src/types/logger.js';
+import { ILogger } from '@shared/logger';
 import db from '../../src/db/database.js';
 import pg from 'pg';
 

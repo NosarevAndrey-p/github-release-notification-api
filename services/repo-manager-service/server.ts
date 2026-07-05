@@ -2,9 +2,9 @@ import { createApp } from './src/app.js';
 import { scan, handleUntrackEvent } from './src/services/scannerService.js';
 import db from './src/db/database.js';
 import githubService from './src/services/githubService.js';
-import { AmqpService } from './src/services/amqpService.js';
+import { AmqpService } from '@shared/amqp';
 import { UntrackPayload } from './src/types/amqp.js';
-import { logger } from './src/services/loggerService.js';
+import { logger } from '@shared/logger';
 import { config } from './src/config/index.js';
 
 await db.initSchema();

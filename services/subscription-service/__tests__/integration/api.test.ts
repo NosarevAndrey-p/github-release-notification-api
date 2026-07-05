@@ -5,12 +5,12 @@ import { createApp } from '../../src/app.js';
 import { mock, mockReset } from 'jest-mock-extended';
 import { IEmailService } from '../../src/types/email.js';
 import { UUIDProvider } from '../../src/types/subscription.js';
-import { ILogger } from '../../src/types/logger.js';
+import { ILogger } from '@shared/logger';
 import db from '../../src/db/database.js';
 import pg from 'pg';
 
 import { RepoManagerService } from '../../src/services/repo-manager/repoManagerService.js';
-import { AmqpService } from '../../src/services/amqpService.js';
+import { AmqpService } from '@shared/amqp';
 
 async function seedSubscription(params: {
   email?: string;

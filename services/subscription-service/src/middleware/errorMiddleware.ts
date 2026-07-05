@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { AppError } from '../types/errors.js';
-import { ILogger } from '../types/logger.js';
+import { ILogger } from '@shared/logger';
 
 export function createErrorMiddleware(logger: ILogger) {
   return (

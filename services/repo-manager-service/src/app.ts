@@ -4,7 +4,7 @@ import createApiRouter from './routes/api.js';
 import { createErrorMiddleware } from './middleware/errorMiddleware.js';
 import { requestLogger } from './middleware/requestLoggerMiddleware.js';
 import { metricsMiddleware } from './middleware/metricsMiddleware.js';
-import { ILogger } from './types/logger.js';
+import { ILogger } from '@shared/logger';
 import { ApiDeps } from './routes/api.js';
 
 export interface AppDeps extends ApiDeps {

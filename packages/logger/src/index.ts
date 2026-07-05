@@ -1,6 +1,11 @@
 import winston from 'winston';
 import path from 'path';
-import { ILogger } from '../types/logger.js';
+
+export interface ILogger {
+  info(message: string, ...args: unknown[]): void;
+  warn(message: string, ...args: unknown[]): void;
+  error(message: string, ...args: unknown[]): void;
+}
 
 const winstonLogger = winston.createLogger({
   level: 'info',

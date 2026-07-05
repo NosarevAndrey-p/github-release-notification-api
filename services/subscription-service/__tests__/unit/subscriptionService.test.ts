@@ -11,8 +11,8 @@ import { ISubscriptionStore, Subscription } from '../../src/types/database.js';
 import { IEmailService } from '../../src/types/email.js';
 import { UUIDProvider } from '../../src/types/subscription.js';
 import { IRepoManagerService } from '../../src/types/repo-manager.js';
-import { AmqpService } from '../../src/services/amqpService.js';
-import { ILogger } from '../../src/types/logger.js';
+import { AmqpService } from '@shared/amqp';
+import { ILogger } from '@shared/logger';
 import { NotFoundError } from '../../src/types/errors.js';
 
 describe('subscriptionService', () => {
