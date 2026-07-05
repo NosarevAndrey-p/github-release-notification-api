@@ -18,7 +18,6 @@ export const config: Config = {
   app: {
     port: Number(process.env.PORT) || 3000,
     scanInterval: Number(process.env.SCAN_INTERVAL) || 60000,
-    baseUrl: process.env.BASE_URL || 'http://localhost:3000',
     notificationServiceUrl: process.env.NOTIFICATION_SERVICE_URL || 'http://localhost:3002',
     emailServiceUrl: process.env.EMAIL_SERVICE_URL || 'http://localhost:3003',
   },

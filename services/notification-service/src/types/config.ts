@@ -1,7 +1,6 @@
 export interface AppConfig {
   port: number;
   scanInterval: number;
-  baseUrl: string;
   subscriptionServiceUrl: string;
   emailServiceUrl: string;
 }
