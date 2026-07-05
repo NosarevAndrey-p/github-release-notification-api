@@ -5,15 +5,18 @@ WORKDIR /app
 # Copy root manifests
 COPY package.json package-lock.json ./
 
+# Copy shared packages
+COPY packages ./packages
+
 # Copy service directory
-COPY services/notification-service ./services/notification-service
+COPY services/repo-manager-service ./services/repo-manager-service
 
 # Install dependencies for the workspace
 RUN npm ci
 
 # Build the TypeScript files
-RUN npm run build -w services/notification-service
+RUN npm run build -w services/repo-manager-service
 
 EXPOSE 3002
 
-CMD ["npm", "run", "start:notification"]
+CMD ["npm", "run", "start:repo-manager"]

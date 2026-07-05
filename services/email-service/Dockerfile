@@ -5,6 +5,9 @@ WORKDIR /app
 # Copy root manifests
 COPY package.json package-lock.json ./
 
+# Copy shared packages
+COPY packages ./packages
+
 # Copy service directory
 COPY services/email-service ./services/email-service
 
