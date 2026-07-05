@@ -118,7 +118,6 @@ Tracks repositories being scanned.
 | `id` | `SERIAL` | `PRIMARY KEY` | Unique identifier. |
 | `full_name` | `VARCHAR(255)` | `NOT NULL UNIQUE` | GitHub repository identifier (e.g. `owner/repo`). |
 | `last_seen_tag` | `VARCHAR(100)` | `NULL` | Latest scanned tag. |
-| `created_at` | `TIMESTAMP` | `DEFAULT CURRENT_TIMESTAMP` | Tracking start time. |
 
 ---
 
