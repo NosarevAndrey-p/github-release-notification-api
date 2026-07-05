@@ -27,7 +27,7 @@ export async function subscribeToRepo({ email, repo }: { email: string; repo: st
 }
 
 export async function confirmSubscription(token: string, deps: SubscriptionDeps) {
-  const { subStore, repoManagerService } = deps;
+  const { subStore } = deps;
   const sub = await subStore.getSubscriptionByConfirmToken(token);
   if (!sub) {
     throw new NotFoundError('Token not found');
@@ -35,15 +35,6 @@ export async function confirmSubscription(token: string, deps: SubscriptionDeps)
 
   if (sub.confirmed) {
     return { status: SubscriptionResult.ALREADY_CONFIRMED };
-  }
-
-  try {
-    await repoManagerService.registerRepository(sub.repo_name);
-  } catch (err) {
-    if (err instanceof NotFoundError) {
-      await subStore.deleteSubscriptionById(sub.id);
-    }
-    throw err;
   }
 
   await subStore.updateSubscriptionConfirmed(sub.id);
