@@ -8,6 +8,7 @@ import {
 import { ValidatorService } from '../services/validatorService.js';
 import { SubscriptionResult, SubscriptionDeps } from '../types/subscription.js';
 
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface ApiDeps extends SubscriptionDeps {}
 
 const SUBSCRIPTION_MESSAGES = {

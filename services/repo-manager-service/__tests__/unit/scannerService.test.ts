@@ -1,4 +1,3 @@
-import { jest } from '@jest/globals';
 import { scan, handleUntrackEvent, ScannerDeps } from '../../src/services/scannerService.js';
 import { RateLimitError } from '../../src/types/errors.js';
 import { mock, mockReset } from 'jest-mock-extended';

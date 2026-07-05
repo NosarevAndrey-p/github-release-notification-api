@@ -4,8 +4,6 @@ import createApiRouter from './routes/api.js';
 import { createErrorMiddleware } from './middleware/errorMiddleware.js';
 import { requestLogger } from './middleware/requestLoggerMiddleware.js';
 import { metricsMiddleware } from './middleware/metricsMiddleware.js';
-import { IRepositoryStore } from './types/database.js';
-import { IGitHubService } from './types/github.js';
 import { ILogger } from './types/logger.js';
 import { ApiDeps } from './routes/api.js';
 

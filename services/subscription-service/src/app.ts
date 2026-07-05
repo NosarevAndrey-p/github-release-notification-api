@@ -11,6 +11,7 @@ import { ApiDeps } from './routes/api.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface AppDeps extends ApiDeps {}
 
 export function createApp(deps: AppDeps) {
