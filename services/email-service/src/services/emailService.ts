@@ -1,5 +1,6 @@
 import { IEmailService, EmailDeps, EmailMessagePayload } from '../types/email.js';
 import { emailStyles as styles } from '../constants/emailStyles.js';
+import { BadRequestError } from '../types/errors.js';
 
 export class EmailService implements IEmailService {
   private renderer;
@@ -67,7 +68,7 @@ export class EmailService implements IEmailService {
         payload.unsubscribeToken || ''
       );
     } else {
-      throw new Error(`Unknown email message type: ${(payload as any).type}`);
+      throw new BadRequestError(`Unknown email message type: ${(payload as any).type}`);
     }
   }
 }

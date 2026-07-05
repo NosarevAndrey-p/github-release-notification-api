@@ -1,5 +1,5 @@
 import { IRepoManagerService, RepoManagerDeps } from '../../types/repo-manager.js';
-import { NotFoundError } from '../../types/errors.js';
+import { NotFoundError, ServiceError } from '../../types/errors.js';
 
 export class RepoManagerService implements IRepoManagerService {
   private repoManagerServiceUrl: string;
@@ -22,11 +22,11 @@ export class RepoManagerService implements IRepoManagerService {
       }
 
       if (!res.ok) {
-        throw new Error(`Repo manager service returned ${res.status}`);
+        throw new ServiceError(`Repo manager service returned ${res.status}`);
       }
     } catch (err) {
-      if (err instanceof NotFoundError) throw err;
-      throw new Error(`Failed to contact repo manager service: ${err instanceof Error ? err.message : String(err)}`, { cause: err });
+      if (err instanceof NotFoundError || err instanceof ServiceError) throw err;
+      throw new ServiceError(`Failed to contact repo manager service: ${err instanceof Error ? err.message : String(err)}`);
     }
   }
 

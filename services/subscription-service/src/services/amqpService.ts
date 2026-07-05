@@ -1,6 +1,7 @@
 import amqp from 'amqplib';
 import { ILogger } from '../types/logger.js';
 import { IAmqpService, AmqpConfig } from '../types/amqp.js';
+import { AmqpError } from '../types/errors.js';
 
 export class AmqpService implements IAmqpService {
   private url: string;
@@ -30,25 +31,25 @@ export class AmqpService implements IAmqpService {
         }
       }
     }
-    throw new Error('Failed to connect to RabbitMQ after multiple retries.');
+    throw new AmqpError('Failed to connect to RabbitMQ after multiple retries.');
   }
 
   async publish<T>(routingKey: string, payload: T): Promise<void> {
-    if (!this.channel) throw new Error('AMQP channel not initialized');
+    if (!this.channel) throw new AmqpError('AMQP channel not initialized');
     const content = Buffer.from(JSON.stringify(payload));
     this.channel.publish(this.exchange, routingKey, content, { persistent: true });
     this.logger.info(`AMQP Published message with routing key "${routingKey}"`);
   }
 
   async setupQueue(queueName: string, routingKeyPattern: string): Promise<void> {
-    if (!this.channel) throw new Error('AMQP channel not initialized');
+    if (!this.channel) throw new AmqpError('AMQP channel not initialized');
     await this.channel.assertQueue(queueName, { durable: true });
     await this.channel.bindQueue(queueName, this.exchange, routingKeyPattern);
     this.logger.info(`AMQP Setup queue "${queueName}" bound to "${routingKeyPattern}"`);
   }
 
   async consume<T>(queueName: string, onMessage: (payload: T) => Promise<void>): Promise<void> {
-    if (!this.channel) throw new Error('AMQP channel not initialized');
+    if (!this.channel) throw new AmqpError('AMQP channel not initialized');
     await this.channel.consume(queueName, async (msg) => {
       if (!msg) return;
       try {

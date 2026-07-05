@@ -1,4 +1,5 @@
 import { IEmailService, EmailDeps } from '../../types/email.js';
+import { ServiceError } from '../../types/errors.js';
 
 export class EmailService implements IEmailService {
   private emailServiceUrl: string;
@@ -28,7 +29,7 @@ export class EmailService implements IEmailService {
 
     if (!res.ok) {
       const errText = await res.text().catch(() => '');
-      throw new Error(`Failed to send notification email via email service: ${res.statusText}. ${errText}`);
+      throw new ServiceError(`Failed to send notification email via email service: ${res.statusText}. ${errText}`);
     }
   }
 }

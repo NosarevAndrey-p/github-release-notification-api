@@ -15,3 +15,34 @@ export class NotFoundError extends AppError {
     super(message, 404);
   }
 }
+
+export class ConflictError extends AppError {
+  constructor(message: string) {
+    super(message, 409);
+  }
+}
+
+export class RateLimitError extends AppError {
+  constructor(message: string) {
+    super(message, 429);
+  }
+}
+
+export class ServiceError extends AppError {
+  constructor(message: string) {
+    super(message, 500);
+  }
+}
+
+export class DatabaseError extends AppError {
+  constructor(message: string) {
+    super(message, 500);
+  }
+}
+
+export class AmqpError extends AppError {
+  constructor(message: string) {
+    super(message, 500);
+  }
+}
+
