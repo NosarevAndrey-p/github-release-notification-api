@@ -37,7 +37,14 @@ export async function confirmSubscription(token: string, deps: SubscriptionDeps)
     return { status: SubscriptionResult.ALREADY_CONFIRMED };
   }
 
-  await repoManagerService.registerRepository(sub.repo_name);
+  try {
+    await repoManagerService.registerRepository(sub.repo_name);
+  } catch (err) {
+    if (err instanceof NotFoundError) {
+      await subStore.deleteSubscriptionById(sub.id);
+    }
+    throw err;
+  }
 
   await subStore.updateSubscriptionConfirmed(sub.id);
   return { status: SubscriptionResult.CONFIRMED };
