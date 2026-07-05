@@ -48,3 +48,17 @@ async function processRepository(repo: Repository, deps: ScannerDeps) {
 
   await repoStore.updateRepositoryLastSeenTag(repo.id, release.tag_name);
 }
+
+export async function handleUntrackEvent(
+  payload: { repo_name: string },
+  repoStore: IRepositoryStore,
+  logger: ILogger
+): Promise<void> {
+  const { repo_name } = payload;
+  logger.info(`Received untrack command for repository: ${repo_name}`);
+  const repo = await repoStore.getRepositoryByFullName(repo_name);
+  if (repo) {
+    await repoStore.deleteRepositoryById(repo.id);
+    logger.info(`Successfully untracked repository: ${repo_name}`);
+  }
+}

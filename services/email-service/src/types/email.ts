@@ -12,6 +12,15 @@ export interface EmailDeps {
   baseUrl: string;
 }
 
+export interface EmailMessagePayload {
+  type: 'confirmation' | 'notification';
+  to: string;
+  repo: string;
+  confirmToken?: string;
+  unsubscribeToken?: string;
+  tagName?: string;
+}
+
 export interface IEmailService {
   sendConfirmationEmail(
     email: string,
@@ -26,4 +35,6 @@ export interface IEmailService {
     tagName: string,
     unsubscribeToken: string
   ): Promise<void>;
+
+  handleEmailMessage(payload: EmailMessagePayload): Promise<void>;
 }

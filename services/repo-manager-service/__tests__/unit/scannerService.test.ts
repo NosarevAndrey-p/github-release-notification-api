@@ -1,5 +1,5 @@
 import { jest } from '@jest/globals';
-import { scan, ScannerDeps } from '../../src/services/scannerService.js';
+import { scan, handleUntrackEvent, ScannerDeps } from '../../src/services/scannerService.js';
 import { RateLimitError } from '../../src/types/errors.js';
 import { mock, mockReset } from 'jest-mock-extended';
 import { IRepositoryStore } from '../../src/types/database.js';
@@ -87,5 +87,28 @@ describe('scannerService', () => {
 
     expect(mockLogger.error).toHaveBeenCalledWith('Scan failed for owner/repo1:', genericError);
     expect(mockGithubService.fetchLatestRelease).toHaveBeenCalledTimes(2);
+  });
+
+  describe('handleUntrackEvent', () => {
+    it('should delete repository from database if it exists', async () => {
+      const mockPayload = { repo_name: 'owner/repo' };
+      mockDb.getRepositoryByFullName.mockResolvedValue({ id: 1, full_name: 'owner/repo', last_seen_tag: 'v1.0' });
+      mockDb.deleteRepositoryById.mockResolvedValue({ rowCount: 1 });
+
+      await handleUntrackEvent(mockPayload, mockDb, mockLogger);
+
+      expect(mockDb.getRepositoryByFullName).toHaveBeenCalledWith('owner/repo');
+      expect(mockDb.deleteRepositoryById).toHaveBeenCalledWith(1);
+    });
+
+    it('should do nothing if repository does not exist', async () => {
+      const mockPayload = { repo_name: 'owner/repo' };
+      mockDb.getRepositoryByFullName.mockResolvedValue(null);
+
+      await handleUntrackEvent(mockPayload, mockDb, mockLogger);
+
+      expect(mockDb.getRepositoryByFullName).toHaveBeenCalledWith('owner/repo');
+      expect(mockDb.deleteRepositoryById).not.toHaveBeenCalled();
+    });
   });
 });

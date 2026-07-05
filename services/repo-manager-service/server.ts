@@ -1,5 +1,5 @@
 import { createApp } from './src/app.js';
-import { scan } from './src/services/scannerService.js';
+import { scan, handleUntrackEvent } from './src/services/scannerService.js';
 import db from './src/db/database.js';
 import githubService from './src/services/githubService.js';
 import { AmqpService } from './src/services/amqpService.js';
@@ -49,13 +49,7 @@ interface UntrackPayload {
 
 await amqpService.setupQueue('repo_manager_untrack_queue', 'repository.untrack');
 await amqpService.consume<UntrackPayload>('repo_manager_untrack_queue', async (payload) => {
-  const { repo_name } = payload;
-  logger.info(`Received untrack command for repository: ${repo_name}`);
-  const repo = await db.getRepositoryByFullName(repo_name);
-  if (repo) {
-    await db.deleteRepositoryById(repo.id);
-    logger.info(`Successfully untracked repository: ${repo_name}`);
-  }
+  await handleUntrackEvent(payload, db, logger);
 });
 
 const server = app.listen(config.app.port, () => {
