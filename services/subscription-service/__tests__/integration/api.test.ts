@@ -249,7 +249,7 @@ describe('API Routes (Integration)', () => {
       mockFetch.mockResolvedValue({
         status: 200,
         ok: true,
-        json: async () => ({ repo_name: 'owner/repo', last_seen_tag: 'v1.0.0' }),
+        json: async () => ({ 'owner/repo': 'v1.0.0' }),
       } as unknown as Response);
 
       const response = await request(app)
