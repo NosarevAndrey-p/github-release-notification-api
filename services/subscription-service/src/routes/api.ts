@@ -9,12 +9,13 @@ import { ISubscriptionStore } from '../types/database.js';
 import { IEmailService } from '../types/email.js';
 import { ValidatorService } from '../services/validatorService.js';
 import { UUIDProvider, SubscriptionResult } from '../types/subscription.js';
+import { INotificationService } from '../types/notification.js';
 
 interface ApiDeps {
   subStore: ISubscriptionStore;
   emailService: IEmailService;
+  notificationService: INotificationService;
   crypto: UUIDProvider;
-  notificationServiceUrl?: string;
 }
 
 const SUBSCRIPTION_MESSAGES = {

@@ -4,25 +4,6 @@ import {
   ConflictError, 
 } from '../types/errors.js';
 
-async function fetchLatestTags(repos: string[], notificationServiceUrl: string): Promise<Record<string, string | null>> {
-  const tags: Record<string, string | null> = {};
-  const promises = repos.map(async (repo) => {
-    try {
-      const res = await fetch(`${notificationServiceUrl}/api/internal/repositories?repo=${encodeURIComponent(repo)}`);
-      if (res.ok) {
-        const data = await res.json() as { last_seen_tag: string | null };
-        tags[repo] = data.last_seen_tag;
-      } else {
-        tags[repo] = null;
-      }
-    } catch {
-      tags[repo] = null;
-    }
-  });
-  await Promise.all(promises);
-  return tags;
-}
-
 export async function subscribeToRepo({ email, repo }: { email: string; repo: string }, deps: SubscriptionDeps) {
   const existing = await deps.subStore.getSubscriptionByEmailAndRepoName(email, repo);
   if (existing) {
@@ -34,25 +15,7 @@ export async function subscribeToRepo({ email, repo }: { email: string; repo: st
     return { status: SubscriptionResult.RESENT };
   }
 
-  const notificationUrl = deps.notificationServiceUrl || 'http://localhost:3002';
-  try {
-    const res = await fetch(`${notificationUrl}/api/internal/repositories`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ repo_name: repo }),
-    });
-
-    if (res.status === 404) {
-      throw new NotFoundError('repository not found');
-    }
-
-    if (!res.ok) {
-      throw new Error(`Notification service returned ${res.status}`);
-    }
-  } catch (err) {
-    if (err instanceof NotFoundError) throw err;
-    throw new Error(`Failed to contact notification service: ${err instanceof Error ? err.message : String(err)}`, { cause: err });
-  }
+  await deps.notificationService.registerRepository(repo);
 
   const confirmToken = deps.crypto.randomUUID();
   const unsubscribeToken = deps.crypto.randomUUID();
@@ -64,7 +27,7 @@ export async function subscribeToRepo({ email, repo }: { email: string; repo: st
 }
 
 export async function confirmSubscription(token: string, deps: SubscriptionDeps) {
-  const { subStore, notificationServiceUrl } = deps;
+  const { subStore, notificationService } = deps;
   const sub = await subStore.getSubscriptionByConfirmToken(token);
   if (!sub) {
     throw new NotFoundError('Token not found');
@@ -74,20 +37,7 @@ export async function confirmSubscription(token: string, deps: SubscriptionDeps)
     return { status: SubscriptionResult.ALREADY_CONFIRMED };
   }
 
-  const notificationUrl = notificationServiceUrl || 'http://localhost:3002';
-  try {
-    const res = await fetch(`${notificationUrl}/api/internal/repositories`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ repo_name: sub.repo_name }),
-    });
-
-    if (!res.ok) {
-      throw new Error(`Notification service returned ${res.status}`);
-    }
-  } catch (err) {
-    throw new Error(`Failed to contact notification service on confirmation: ${err instanceof Error ? err.message : String(err)}`, { cause: err });
-  }
+  await notificationService.registerRepository(sub.repo_name);
 
   await subStore.updateSubscriptionConfirmed(sub.id);
   return { status: SubscriptionResult.CONFIRMED };
@@ -110,8 +60,7 @@ export async function getSubscriptions(email: string, deps: SubscriptionDeps) {
   }
 
   const repos = Array.from(new Set(rows.map(row => row.repo)));
-  const notificationUrl = deps.notificationServiceUrl || 'http://localhost:3002';
-  const tags = await fetchLatestTags(repos, notificationUrl);
+  const tags = await deps.notificationService.fetchLatestTags(repos);
 
   return rows.map(row => new SubscriptionModel({
     email: row.email,
