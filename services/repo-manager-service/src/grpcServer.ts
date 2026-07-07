@@ -6,7 +6,7 @@ import { ValidatorService } from './services/validatorService.js';
 import { BadRequestError } from '@shared/errors';
 import { ILogger } from '@shared/logger';
 
-export function createGrpcServer(db: IRepositoryStore, logger: ILogger) {
+export function createGrpcServer(db: IRepositoryStore, _logger: ILogger) {
   const packageDefinition = protoLoader.loadSync(PROTO_PATH, {
     keepCase: true,
     longs: String,
@@ -16,6 +16,7 @@ export function createGrpcServer(db: IRepositoryStore, logger: ILogger) {
   });
 
   const protoDescriptor = grpc.loadPackageDefinition(packageDefinition);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let repoManagerProto: any = protoDescriptor;
   for (const part of PROTO_PACKAGE.split('.')) {
     repoManagerProto = repoManagerProto[part];
@@ -24,7 +25,10 @@ export function createGrpcServer(db: IRepositoryStore, logger: ILogger) {
   const server = new grpc.Server();
 
   server.addService(repoManagerProto[PROTO_SERVICE].service, {
-    FetchLatestTag: async (call: any, callback: any) => {
+    FetchLatestTag: async (
+      call: grpc.ServerUnaryCall<{ repo_name: string }, { repo_name: string; last_seen_tag?: string }>,
+      callback: grpc.sendUnaryData<{ repo_name: string; last_seen_tag?: string }>
+    ) => {
       try {
         const { repo_name } = call.request;
         ValidatorService.validateRepo(repo_name);
@@ -55,7 +59,10 @@ export function createGrpcServer(db: IRepositoryStore, logger: ILogger) {
         }
       }
     },
-    FetchLatestTags: async (call: any, callback: any) => {
+    FetchLatestTags: async (
+      call: grpc.ServerUnaryCall<{ repo_names: string[] }, { tags: Record<string, { last_seen_tag?: string }> }>,
+      callback: grpc.sendUnaryData<{ tags: Record<string, { last_seen_tag?: string }> }>
+    ) => {
       try {
         const { repo_names } = call.request;
         if (!Array.isArray(repo_names)) {
