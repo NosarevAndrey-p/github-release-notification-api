@@ -46,7 +46,7 @@ export interface OutboxMessage {
   id: number;
   saga_id: string;
   event_type: string;
-  payload: any;
+  payload: unknown;
   processed: boolean;
   created_at: Date;
 }

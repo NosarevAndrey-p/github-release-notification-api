@@ -1,5 +1,5 @@
 import { SubscriptionDeps, SubscriptionResult } from '../types/subscription.js';
-import { IDatabaseClient } from '../types/database.js';
+import { IDatabaseClient, Saga } from '../types/database.js';
 import { NotFoundError, ServiceError } from '../types/errors.js';
 import client from 'prom-client';
 
@@ -17,7 +17,7 @@ const sagaCount = new client.Counter({
 });
 
 interface SagaPromiseResolver {
-  resolve: (value: any) => void;
+  resolve: (value: unknown) => void;
   reject: (err: Error) => void;
   timeoutId: NodeJS.Timeout;
   startTime: number;
@@ -26,7 +26,7 @@ interface SagaPromiseResolver {
 export class SagaRegistry {
   private static resolvers = new Map<string, SagaPromiseResolver>();
 
-  static register(sagaId: string, resolve: (value: any) => void, reject: (err: Error) => void, timeoutMs = 10000) {
+  static register(sagaId: string, resolve: (value: unknown) => void, reject: (err: Error) => void, timeoutMs = 10000) {
     const startTime = performance.now();
     const timeoutId = setTimeout(() => {
       const resolver = this.resolvers.get(sagaId);
@@ -41,7 +41,7 @@ export class SagaRegistry {
     this.resolvers.set(sagaId, { resolve, reject, timeoutId, startTime });
   }
 
-  static resolve(sagaId: string, value: any) {
+  static resolve(sagaId: string, value: unknown) {
     const resolver = this.resolvers.get(sagaId);
     if (resolver) {
       clearTimeout(resolver.timeoutId);
@@ -79,7 +79,7 @@ export class SagaOrchestrator {
     const sagaId = deps.crypto.randomUUID();
 
     const sagaResultPromise = new Promise<{ status: SubscriptionResult }>((resolve, reject) => {
-      SagaRegistry.register(sagaId, resolve, reject);
+      SagaRegistry.register(sagaId, resolve as (value: unknown) => void, reject);
     });
 
     await db.startSubscriptionSaga(sagaId, email, repoName, confirmToken, unsubscribeToken);
@@ -134,7 +134,7 @@ export class SagaOrchestrator {
 
   private static async rollback(
     sagaId: string,
-    saga: any,
+    saga: Saga,
     deps: SubscriptionDeps,
     triggerError: Error
   ): Promise<void> {

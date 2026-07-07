@@ -13,7 +13,7 @@ export interface OutboxMessage {
   id: number;
   saga_id: string;
   event_type: string;
-  payload: any;
+  payload: unknown;
   processed: boolean;
   created_at: Date;
 }
@@ -35,7 +35,7 @@ export interface IDatabaseClient extends IRepositoryStore {
     fullName: string,
     lastSeenTag: string | null
   ): Promise<Repository>;
-  queueOutbox(sagaId: string, eventType: string, payload: any): Promise<void>;
+  queueOutbox(sagaId: string, eventType: string, payload: unknown): Promise<void>;
   getUnprocessedOutbox(): Promise<OutboxMessage[]>;
   markOutboxProcessed(ids: number[]): Promise<void>;
 }

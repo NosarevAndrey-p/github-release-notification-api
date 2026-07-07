@@ -124,7 +124,7 @@ export default class PostgresDatabase implements IDatabaseClient {
     }
   }
 
-  async queueOutbox(sagaId: string, eventType: string, payload: any): Promise<void> {
+  async queueOutbox(sagaId: string, eventType: string, payload: unknown): Promise<void> {
     await this.run(queries.insertOutbox, [sagaId, eventType, JSON.stringify(payload)]);
   }
 

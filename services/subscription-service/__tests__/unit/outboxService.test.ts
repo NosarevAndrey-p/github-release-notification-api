@@ -3,7 +3,6 @@ import { IDatabaseClient, OutboxMessage } from '../../src/types/database.js';
 import { IAmqpService } from '@shared/amqp';
 import { ILogger } from '@shared/logger';
 import { mock, mockReset } from 'jest-mock-extended';
-import { jest } from '@jest/globals';
 
 describe('OutboxService', () => {
   const mockDb = mock<IDatabaseClient>();

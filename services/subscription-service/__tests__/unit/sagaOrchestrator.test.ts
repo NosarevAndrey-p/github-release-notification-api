@@ -1,6 +1,6 @@
-import { SagaOrchestrator, SagaRegistry } from '../../src/services/sagaOrchestrator.js';
+import { SagaOrchestrator } from '../../src/services/sagaOrchestrator.js';
 import { SubscriptionDeps, SubscriptionResult } from '../../src/types/subscription.js';
-import { IDatabaseClient, Saga } from '../../src/types/database.js';
+import { IDatabaseClient, Saga, Subscription, DatabaseResult } from '../../src/types/database.js';
 import { IEmailService } from '../../src/types/email.js';
 import { UUIDProvider } from '../../src/types/subscription.js';
 import { IRepoManagerService } from '../../src/types/repo-manager.js';
@@ -8,7 +8,6 @@ import { AmqpService } from '@shared/amqp';
 import { ILogger } from '@shared/logger';
 import { mock, mockReset } from 'jest-mock-extended';
 import { NotFoundError } from '../../src/types/errors.js';
-import { jest } from '@jest/globals';
 
 describe('SagaOrchestrator', () => {
   const mockDb = mock<IDatabaseClient>();
@@ -39,7 +38,7 @@ describe('SagaOrchestrator', () => {
   it('should start Saga and resolve when repository is registered successfully', async () => {
     const sagaId = '12345678-1234-1234-1234-123456789012';
     mockCrypto.randomUUID.mockReturnValue(sagaId);
-    mockDb.startSubscriptionSaga.mockResolvedValue({} as any);
+    mockDb.startSubscriptionSaga.mockResolvedValue({} as Subscription);
 
     const startPromise = SagaOrchestrator.start(
       'test@example.com',
@@ -66,7 +65,7 @@ describe('SagaOrchestrator', () => {
     };
     mockDb.getSaga.mockResolvedValue(mockSagaRecord);
     mockEmailService.sendConfirmationEmail.mockResolvedValue(undefined);
-    mockDb.updateSagaState.mockResolvedValue({} as any);
+    mockDb.updateSagaState.mockResolvedValue(undefined);
 
     // Trigger repo registered event asynchronously
     setImmediate(async () => {
@@ -99,7 +98,7 @@ describe('SagaOrchestrator', () => {
   it('should rollback Saga and reject with NotFoundError when repository registration fails', async () => {
     const sagaId = '12345678-1234-1234-1234-123456789012';
     mockCrypto.randomUUID.mockReturnValue(sagaId);
-    mockDb.startSubscriptionSaga.mockResolvedValue({} as any);
+    mockDb.startSubscriptionSaga.mockResolvedValue({} as Subscription);
 
     const startPromise = SagaOrchestrator.start(
       'test@example.com',
@@ -124,8 +123,8 @@ describe('SagaOrchestrator', () => {
       updated_at: new Date(),
     };
     mockDb.getSaga.mockResolvedValue(mockSagaRecord);
-    mockDb.updateSagaState.mockResolvedValue({} as any);
-    mockDb.deleteSubscriptionByEmailAndRepoName.mockResolvedValue({} as any);
+    mockDb.updateSagaState.mockResolvedValue(undefined);
+    mockDb.deleteSubscriptionByEmailAndRepoName.mockResolvedValue({} as DatabaseResult);
 
     // Trigger repo failed event asynchronously
     setImmediate(async () => {
