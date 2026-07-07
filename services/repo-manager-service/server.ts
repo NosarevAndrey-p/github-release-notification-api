@@ -2,11 +2,10 @@ import { createApp } from './src/app.js';
 import { scan, handleUntrackEvent } from './src/services/scannerService.js';
 import db from './src/db/database.js';
 import githubService from './src/services/githubService.js';
-import { AmqpService } from '@shared/amqp';
+import { AmqpService, OutboxService } from '@shared/amqp';
 import { UntrackPayload } from './src/types/amqp.js';
 import { logger } from '@shared/logger';
 import { config } from './src/config/index.js';
-import { OutboxService } from './src/services/outboxService.js';
 import { ValidatorService } from './src/services/validatorService.js';
 
 await db.initSchema();

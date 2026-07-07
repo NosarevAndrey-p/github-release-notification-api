@@ -101,3 +101,6 @@ export class AmqpService implements IAmqpService {
     }
   }
 }
+
+export { OutboxService } from './outboxService.js';
+export type { IOutboxMessage, IOutboxStore } from './outboxService.js';

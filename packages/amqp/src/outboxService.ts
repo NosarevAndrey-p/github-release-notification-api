@@ -1,17 +1,32 @@
-import { IDatabaseClient } from '../types/database.js';
-import { IAmqpService } from '@shared/amqp';
 import { ILogger } from '@shared/logger';
-import { IOutboxService } from '../types/outbox.js';
+import { IAmqpService } from './index.js';
 
-export class OutboxService implements IOutboxService {
-  private db: IDatabaseClient;
+export interface IOutboxMessage {
+  id: number;
+  saga_id: string;
+  event_type: string;
+  payload: unknown;
+  processed: boolean;
+  created_at: Date;
+}
+
+export interface IOutboxStore {
+  getUnprocessedOutbox(): Promise<IOutboxMessage[]>;
+  markOutboxProcessed(ids: number[]): Promise<void>;
+}
+
+export class OutboxService {
+  private db: IOutboxStore;
   private amqpService: IAmqpService;
   private logger: ILogger;
   private intervalMs: number;
   private timeoutId: NodeJS.Timeout | null = null;
   private isRunning = false;
 
-  constructor(deps: { db: IDatabaseClient; amqpService: IAmqpService; logger: ILogger }, intervalMs = 1000) {
+  constructor(
+    deps: { db: IOutboxStore; amqpService: IAmqpService; logger: ILogger },
+    intervalMs = 1000
+  ) {
     this.db = deps.db;
     this.amqpService = deps.amqpService;
     this.logger = deps.logger;
@@ -21,7 +36,7 @@ export class OutboxService implements IOutboxService {
   start(): void {
     if (this.isRunning) return;
     this.isRunning = true;
-    this.logger.info('Outbox Service started polling.');
+    this.logger.info('Shared Outbox Service started polling.');
     this.poll();
   }
 
@@ -31,7 +46,7 @@ export class OutboxService implements IOutboxService {
       clearTimeout(this.timeoutId);
       this.timeoutId = null;
     }
-    this.logger.info('Outbox Service stopped polling.');
+    this.logger.info('Shared Outbox Service stopped polling.');
   }
 
   private async poll(): Promise<void> {

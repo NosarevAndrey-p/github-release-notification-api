@@ -1,4 +1,4 @@
-import { OutboxService } from '../../src/services/outboxService.js';
+import { OutboxService } from '@shared/amqp';
 import { IDatabaseClient, OutboxMessage } from '../../src/types/database.js';
 import { IAmqpService } from '@shared/amqp';
 import { ILogger } from '@shared/logger';

@@ -1,12 +1,12 @@
-import { OutboxService } from '../../src/services/outboxService.js';
+import { OutboxService } from '@shared/amqp';
 import { IDatabaseClient, OutboxMessage } from '../../src/types/database.js';
-import { AmqpService } from '@shared/amqp';
+import { IAmqpService } from '@shared/amqp';
 import { ILogger } from '@shared/logger';
 import { mock, mockReset } from 'jest-mock-extended';
 
 describe('OutboxService in Repo Manager', () => {
   const mockDb = mock<IDatabaseClient>();
-  const mockAmqp = mock<AmqpService>();
+  const mockAmqp = mock<IAmqpService>();
   const mockLogger = mock<ILogger>();
 
   let outboxService: OutboxService;
