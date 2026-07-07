@@ -23,6 +23,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Build workspaces
+        run: npm run build
+
       - name: Run Linter
         run: npm run lint
 
@@ -47,6 +50,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Build workspaces
+        run: npm run build
+
       - name: Run Integration Tests
         run: npm run test:integration
         env:
@@ -67,6 +73,9 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Build workspaces
+        run: npm run build
 
       - name: Cache Playwright Browsers
         id: playwright-cache
