@@ -1,5 +1,4 @@
 import { IRepoManagerService, RepoManagerDeps } from '../../types/repo-manager.js';
-import { NotFoundError, ServiceError } from '@shared/errors';
 
 export class RepoManagerService implements IRepoManagerService {
   private repoManagerServiceUrl: string;
