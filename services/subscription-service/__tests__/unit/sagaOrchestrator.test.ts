@@ -8,6 +8,7 @@ import { AmqpService } from '@shared/amqp';
 import { ILogger } from '@shared/logger';
 import { mock, mockReset } from 'jest-mock-extended';
 import { NotFoundError } from '@shared/errors';
+import { jest } from '@jest/globals';
 
 describe('SagaOrchestrator', () => {
   const mockDb = mock<IDatabaseClient>();
@@ -139,5 +140,53 @@ describe('SagaOrchestrator', () => {
       'owner/repo'
     );
     expect(mockDb.updateSagaState).toHaveBeenCalledWith(sagaId, 'FAILED', []);
+  });
+
+  it('should rollback Saga and reject with ServiceError when saga times out', async () => {
+    jest.useFakeTimers();
+    const sagaId = '12345678-1234-1234-1234-123456789012';
+    mockCrypto.randomUUID.mockReturnValue(sagaId);
+    mockDb.startSubscriptionSaga.mockResolvedValue({} as Subscription);
+
+    const startPromise = SagaOrchestrator.start(
+      'test@example.com',
+      'owner/repo',
+      'confirm-token',
+      'unsub-token',
+      mockDeps
+    );
+
+    const mockSagaRecord: Saga = {
+      id: sagaId,
+      type: 'SUBSCRIBE',
+      state: 'STARTED',
+      payload: {
+        email: 'test@example.com',
+        repoName: 'owner/repo',
+        confirmToken: 'confirm-token',
+        unsubscribeToken: 'unsub-token',
+      },
+      steps_completed: [],
+      created_at: new Date(),
+      updated_at: new Date(),
+    };
+    mockDb.getSaga.mockResolvedValue(mockSagaRecord);
+    mockDb.updateSagaState.mockResolvedValue(undefined);
+    mockDb.deleteSubscriptionByEmailAndRepoName.mockResolvedValue({} as DatabaseResult);
+
+    // Fast-forward time to trigger SagaRegistry timeout
+    jest.advanceTimersByTime(10000);
+
+    await expect(startPromise).rejects.toThrow('Saga execution timed out');
+
+    expect(mockDb.getSaga).toHaveBeenCalledWith(sagaId);
+    expect(mockDb.updateSagaState).toHaveBeenCalledWith(sagaId, 'COMPENSATING', []);
+    expect(mockDb.deleteSubscriptionByEmailAndRepoName).toHaveBeenCalledWith(
+      'test@example.com',
+      'owner/repo'
+    );
+    expect(mockDb.updateSagaState).toHaveBeenCalledWith(sagaId, 'FAILED', []);
+
+    jest.useRealTimers();
   });
 });

@@ -83,7 +83,18 @@ export class SagaOrchestrator {
     });
 
     await db.startSubscriptionSaga(sagaId, email, repoName, confirmToken, unsubscribeToken);
-    return sagaResultPromise;
+    try {
+      return await sagaResultPromise;
+    } catch (err) {
+      if (err instanceof ServiceError && err.message === 'Saga execution timed out') {
+        const saga = await db.getSaga(sagaId);
+        if (saga && saga.state === 'STARTED') {
+          deps.logger.warn(`Saga ${sagaId} timed out. Initiating compensation...`);
+          await this.rollback(sagaId, saga, deps, err);
+        }
+      }
+      throw err;
+    }
   }
 
   static async handleRepoRegistered(
