@@ -9,7 +9,7 @@
     "build": "tsc -p tsconfig.build.json",
     "lint": "eslint .",
     "test": "node --experimental-vm-modules ../../node_modules/jest/bin/jest.js",
-    "test:integration": "node --experimental-vm-modules ../../node_modules/jest/bin/jest.js --config jest.config.integration.js"
+    "test:integration": "node --experimental-vm-modules ../../node_modules/jest/bin/jest.js --config jest.config.integration.js --runInBand"
   },
   "dependencies": {
     "@grpc/grpc-js": "^1.14.4",

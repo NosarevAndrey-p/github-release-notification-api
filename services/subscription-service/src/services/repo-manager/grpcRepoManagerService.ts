@@ -16,7 +16,10 @@ export class GrpcRepoManagerService implements IRepoManagerService {
     });
 
     const protoDescriptor = grpc.loadPackageDefinition(packageDefinition);
-    const repoManagerProto = (protoDescriptor as any)[PROTO_PACKAGE];
+    let repoManagerProto: any = protoDescriptor;
+    for (const part of PROTO_PACKAGE.split('.')) {
+      repoManagerProto = repoManagerProto[part];
+    }
     this.client = new repoManagerProto[PROTO_SERVICE](
       gRPCUrl,
       grpc.credentials.createInsecure()
