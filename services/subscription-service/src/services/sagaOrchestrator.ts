@@ -1,26 +1,44 @@
 import { SubscriptionDeps, SubscriptionResult } from '../types/subscription.js';
 import { IDatabaseClient } from '../types/database.js';
 import { NotFoundError, ServiceError } from '../types/errors.js';
+import client from 'prom-client';
+
+const sagaDuration = new client.Histogram({
+  name: 'saga_duration_seconds',
+  help: 'Duration of distributed Saga transactions in seconds',
+  labelNames: ['type', 'status'],
+  buckets: [0.1, 0.5, 1.0, 2.0, 5.0, 10.0]
+});
+
+const sagaCount = new client.Counter({
+  name: 'saga_total',
+  help: 'Total number of Saga transactions executed',
+  labelNames: ['type', 'status']
+});
 
 interface SagaPromiseResolver {
   resolve: (value: any) => void;
   reject: (err: Error) => void;
   timeoutId: NodeJS.Timeout;
+  startTime: number;
 }
 
 export class SagaRegistry {
   private static resolvers = new Map<string, SagaPromiseResolver>();
 
   static register(sagaId: string, resolve: (value: any) => void, reject: (err: Error) => void, timeoutMs = 10000) {
+    const startTime = performance.now();
     const timeoutId = setTimeout(() => {
       const resolver = this.resolvers.get(sagaId);
       if (resolver) {
         this.resolvers.delete(sagaId);
+        sagaCount.inc({ type: 'SUBSCRIBE', status: 'timeout' });
+        sagaDuration.observe({ type: 'SUBSCRIBE', status: 'timeout' }, (performance.now() - startTime) / 1000);
         resolver.reject(new ServiceError('Saga execution timed out'));
       }
     }, timeoutMs);
 
-    this.resolvers.set(sagaId, { resolve, reject, timeoutId });
+    this.resolvers.set(sagaId, { resolve, reject, timeoutId, startTime });
   }
 
   static resolve(sagaId: string, value: any) {
@@ -28,6 +46,9 @@ export class SagaRegistry {
     if (resolver) {
       clearTimeout(resolver.timeoutId);
       this.resolvers.delete(sagaId);
+      const duration = (performance.now() - resolver.startTime) / 1000;
+      sagaCount.inc({ type: 'SUBSCRIBE', status: 'success' });
+      sagaDuration.observe({ type: 'SUBSCRIBE', status: 'success' }, duration);
       resolver.resolve(value);
     }
   }
@@ -37,6 +58,10 @@ export class SagaRegistry {
     if (resolver) {
       clearTimeout(resolver.timeoutId);
       this.resolvers.delete(sagaId);
+      const duration = (performance.now() - resolver.startTime) / 1000;
+      const status = err instanceof NotFoundError ? 'not_found' : 'failed';
+      sagaCount.inc({ type: 'SUBSCRIBE', status });
+      sagaDuration.observe({ type: 'SUBSCRIBE', status }, duration);
       resolver.reject(err);
     }
   }
