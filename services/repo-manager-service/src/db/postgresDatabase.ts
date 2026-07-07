@@ -1,6 +1,6 @@
 import pg from 'pg';
 import { migrate } from 'postgres-migrations';
-import { IDatabaseClient, Repository, DatabaseResult } from '../types/database.js';
+import { IDatabaseClient, Repository, DatabaseResult, OutboxMessage } from '../types/database.js';
 import { DatabaseConfig } from '../types/config.js';
 import { DatabaseError } from '../types/errors.js';
 
@@ -13,6 +13,9 @@ const queries = {
   getConfirmedRepositories: 'SELECT * FROM repositories',
   updateRepositoryLastSeenTag: 'UPDATE repositories SET last_seen_tag = $1 WHERE id = $2',
   deleteRepositoryById: 'DELETE FROM repositories WHERE id = $1',
+  getUnprocessedOutbox: 'SELECT * FROM outbox WHERE processed = false ORDER BY id ASC',
+  markOutboxProcessed: 'UPDATE outbox SET processed = true WHERE id = ANY($1::bigint[])',
+  insertOutbox: 'INSERT INTO outbox (saga_id, event_type, payload) VALUES ($1, $2, $3)',
 };
 
 export default class PostgresDatabase implements IDatabaseClient {
@@ -86,5 +89,51 @@ export default class PostgresDatabase implements IDatabaseClient {
 
   async close(): Promise<void> {
     await this.pool.end();
+  }
+
+  async createRepositoryAndQueueOutbox(
+    sagaId: string,
+    fullName: string,
+    lastSeenTag: string | null
+  ): Promise<Repository> {
+    const client = await this.pool.connect();
+    try {
+      await client.query('BEGIN');
+
+      // 1. Insert repository
+      const repoRes = await client.query(queries.insertRepository, [fullName, lastSeenTag]);
+
+      // 2. Insert Outbox message
+      await client.query(
+        queries.insertOutbox,
+        [sagaId, 'repository.registered', JSON.stringify({ saga_id: sagaId, repo_name: fullName, last_seen_tag: lastSeenTag })]
+      );
+
+      await client.query('COMMIT');
+
+      return {
+        id: repoRes.rows[0].id,
+        full_name: fullName,
+        last_seen_tag: lastSeenTag,
+      };
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
+  }
+
+  async queueOutbox(sagaId: string, eventType: string, payload: any): Promise<void> {
+    await this.run(queries.insertOutbox, [sagaId, eventType, JSON.stringify(payload)]);
+  }
+
+  async getUnprocessedOutbox(): Promise<OutboxMessage[]> {
+    return this.all<OutboxMessage>(queries.getUnprocessedOutbox);
+  }
+
+  async markOutboxProcessed(ids: number[]): Promise<void> {
+    if (ids.length === 0) return;
+    await this.run(queries.markOutboxProcessed, [ids]);
   }
 }

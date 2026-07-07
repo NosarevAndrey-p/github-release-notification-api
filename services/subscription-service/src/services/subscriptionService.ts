@@ -3,6 +3,7 @@ import {
   NotFoundError, 
   ConflictError, 
 } from '../types/errors.js';
+import { SagaOrchestrator } from './sagaOrchestrator.js';
 
 export async function subscribeToRepo({ email, repo }: { email: string; repo: string }, deps: SubscriptionDeps) {
   const existing = await deps.subStore.getSubscriptionByEmailAndRepoName(email, repo); 
@@ -15,15 +16,10 @@ export async function subscribeToRepo({ email, repo }: { email: string; repo: st
     return { status: SubscriptionResult.RESENT };
   }
 
-  await deps.repoManagerService.registerRepository(repo);
-
   const confirmToken = deps.crypto.randomUUID();
   const unsubscribeToken = deps.crypto.randomUUID();
 
-  await deps.subStore.createSubscription(email, repo, confirmToken, unsubscribeToken);
-  await deps.emailService.sendConfirmationEmail(email, repo, confirmToken, unsubscribeToken);
-
-  return { status: SubscriptionResult.CREATED };
+  return await SagaOrchestrator.start(email, repo, confirmToken, unsubscribeToken, deps);
 }
 
 export async function confirmSubscription(token: string, deps: SubscriptionDeps) {

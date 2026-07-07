@@ -6,6 +6,8 @@ import { AmqpService } from '@shared/amqp';
 import { UntrackPayload } from './src/types/amqp.js';
 import { logger } from '@shared/logger';
 import { config } from './src/config/index.js';
+import { OutboxService } from './src/services/outboxService.js';
+import { ValidatorService } from './src/services/validatorService.js';
 
 await db.initSchema();
 
@@ -44,10 +46,42 @@ const runScanner = async () => {
   }
 };
 
+const outboxService = new OutboxService({ db, amqpService, logger });
+outboxService.start();
 
 await amqpService.setupQueue('repo_manager_untrack_queue', 'repository.untrack');
 await amqpService.consume<UntrackPayload>('repo_manager_untrack_queue', async (payload) => {
   await handleUntrackEvent(payload, db, logger);
+});
+
+await amqpService.setupQueue('repo_manager_register_queue', 'repository.register');
+await amqpService.consume<{ saga_id: string; repo_name: string }>('repo_manager_register_queue', async (payload) => {
+  try {
+    const { saga_id, repo_name } = payload;
+    ValidatorService.validateRepo(repo_name);
+
+    const existing = await db.getRepositoryByFullName(repo_name);
+    if (existing) {
+      await db.queueOutbox(saga_id, 'repository.registered', {
+        saga_id,
+        repo_name,
+        last_seen_tag: existing.last_seen_tag,
+      });
+      return;
+    }
+
+    await githubService.fetchRepository(repo_name);
+    const release = await githubService.fetchLatestRelease(repo_name);
+
+    await db.createRepositoryAndQueueOutbox(saga_id, repo_name, release?.tag_name || null);
+  } catch (err) {
+    logger.error(`Error processing repository.register for saga ${payload.saga_id}:`, err);
+    const errorMsg = err instanceof Error ? err.message : String(err);
+    await db.queueOutbox(payload.saga_id, 'repository.failed', {
+      saga_id: payload.saga_id,
+      error: errorMsg,
+    });
+  }
 });
 
 const server = app.listen(config.app.port, () => {
@@ -57,6 +91,7 @@ const server = app.listen(config.app.port, () => {
 
 const shutdown = async () => {
   logger.info('Graceful shutdown initiated...');
+  outboxService.stop();
   isShuttingDown = true;
   if (scannerTimeoutId) {
     clearTimeout(scannerTimeoutId);

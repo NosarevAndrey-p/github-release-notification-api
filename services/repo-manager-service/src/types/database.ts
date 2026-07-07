@@ -9,6 +9,15 @@ export interface DatabaseResult {
   rows?: unknown[];
 }
 
+export interface OutboxMessage {
+  id: number;
+  saga_id: string;
+  event_type: string;
+  payload: any;
+  processed: boolean;
+  created_at: Date;
+}
+
 export interface IRepositoryStore {
   getRepositoryByFullName(fullName: string): Promise<Repository | null>;
   getRepositoriesByFullNames(fullNames: string[]): Promise<Repository[]>;
@@ -21,4 +30,12 @@ export interface IRepositoryStore {
 export interface IDatabaseClient extends IRepositoryStore {
   initSchema(): Promise<void> | void;
   close(): Promise<void>;
+  createRepositoryAndQueueOutbox(
+    sagaId: string,
+    fullName: string,
+    lastSeenTag: string | null
+  ): Promise<Repository>;
+  queueOutbox(sagaId: string, eventType: string, payload: any): Promise<void>;
+  getUnprocessedOutbox(): Promise<OutboxMessage[]>;
+  markOutboxProcessed(ids: number[]): Promise<void>;
 }
