@@ -1,0 +1,5 @@
+version: v1
+name: buf.build/genesis/repo-manager
+lint:
+  use:
+    - STANDARD

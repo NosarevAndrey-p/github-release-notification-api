@@ -17,6 +17,7 @@ const getDatabaseUrl = (): string => {
 export const config: Config = {
   app: {
     port: Number(process.env.PORT) || 3002,
+    grpcPort: Number(process.env.GRPC_PORT) || 50051,
     scanInterval: Number(process.env.SCAN_INTERVAL) || 60000,
     subscriptionServiceUrl: process.env.SUBSCRIPTION_SERVICE_URL || 'http://localhost:3000',
     amqpUrl: process.env.AMQP_URL || 'amqp://localhost:5672',

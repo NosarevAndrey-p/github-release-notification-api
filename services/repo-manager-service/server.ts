@@ -7,6 +7,8 @@ import { UntrackPayload } from './src/types/amqp.js';
 import { logger } from '@shared/logger';
 import { config } from './src/config/index.js';
 import { ValidatorService } from './src/services/validatorService.js';
+import { createGrpcServer } from './src/grpcServer.js';
+import * as grpc from '@grpc/grpc-js';
 
 await db.initSchema();
 
@@ -83,6 +85,15 @@ await amqpService.consume<{ saga_id: string; repo_name: string }>('repo_manager_
   }
 });
 
+const grpcServer = createGrpcServer(db, logger);
+grpcServer.bindAsync(`0.0.0.0:${config.app.grpcPort}`, grpc.ServerCredentials.createInsecure(), (err, port) => {
+  if (err) {
+    logger.error('Failed to bind gRPC server:', err);
+    return;
+  }
+  logger.info(`Repo Manager gRPC Server running on port ${port}`);
+});
+
 const server = app.listen(config.app.port, () => {
   logger.info(`Repo Manager Service running on port ${config.app.port}`);
   runScanner();
@@ -108,6 +119,13 @@ const shutdown = async () => {
       server.close((err) => (err ? reject(err) : resolve()))
     );
     logger.info('HTTP server closed.');
+
+    await new Promise<void>((resolve) => {
+      grpcServer.tryShutdown(() => {
+        logger.info('gRPC server closed.');
+        resolve();
+      });
+    });
 
     await amqpService.close();
     logger.info('AMQP connection closed.');

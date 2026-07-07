@@ -19,6 +19,8 @@ export const config: Config = {
     port: Number(process.env.PORT) || 3000,
     scanInterval: Number(process.env.SCAN_INTERVAL) || 60000,
     repoManagerServiceUrl: process.env.REPO_MANAGER_SERVICE_URL || 'http://localhost:3002',
+    repoManagerGrpcUrl: process.env.REPO_MANAGER_GRPC_URL || 'localhost:50051',
+    repoManagerCommunication: (process.env.REPO_MANAGER_COMMUNICATION as 'rest' | 'grpc') || 'rest',
     emailServiceUrl: process.env.EMAIL_SERVICE_URL || 'http://localhost:3003',
     amqpUrl: process.env.AMQP_URL || 'amqp://localhost:5672',
   },
