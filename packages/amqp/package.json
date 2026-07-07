@@ -9,8 +9,8 @@
   },
   "dependencies": {
     "amqplib": "^0.10.5",
-    "@shared/logger": "*",
-    "@shared/errors": "*"
+    "@shared/errors": "*",
+    "@shared/logger": "*"
   },
   "devDependencies": {
     "typescript": "^6.0.3",
