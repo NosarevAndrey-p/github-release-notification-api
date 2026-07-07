@@ -2,7 +2,7 @@ import SubscriptionModel, { SubscriptionDeps, SubscriptionResult } from '../type
 import { 
   NotFoundError, 
   ConflictError, 
-} from '../types/errors.js';
+} from '@shared/errors';
 import { SagaOrchestrator } from './sagaOrchestrator.js';
 
 export async function subscribeToRepo({ email, repo }: { email: string; repo: string }, deps: SubscriptionDeps) {

@@ -13,7 +13,7 @@ import { RepoManagerService } from '../../src/services/repo-manager/repoManagerS
 import { AmqpService } from '@shared/amqp';
 import { SagaOrchestrator } from '../../src/services/sagaOrchestrator.js';
 import { SubscriptionResult } from '../../src/types/subscription.js';
-import { NotFoundError } from '../../src/types/errors.js';
+import { NotFoundError } from '@shared/errors';
 
 async function seedSubscription(params: {
   email?: string;

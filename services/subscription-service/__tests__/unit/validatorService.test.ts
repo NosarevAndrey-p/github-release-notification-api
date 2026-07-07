@@ -1,5 +1,5 @@
 import { ValidatorService } from '../../src/services/validatorService.js';
-import { BadRequestError } from '../../src/types/errors.js';
+import { BadRequestError } from '@shared/errors';
 
 describe('ValidatorService', () => {
   describe('validateEmail', () => {

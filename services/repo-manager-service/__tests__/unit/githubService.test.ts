@@ -1,6 +1,6 @@
 import { jest } from '@jest/globals';
 import { GitHubService } from '../../src/services/githubService.js';
-import { NotFoundError, RateLimitError, ServiceError } from '../../src/types/errors.js';
+import { NotFoundError, RateLimitError, ServiceError } from '@shared/errors';
 
 describe('GitHubService', () => {
   let originalFetch: typeof global.fetch;

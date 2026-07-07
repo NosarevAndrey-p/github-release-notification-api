@@ -45,4 +45,3 @@ export class AmqpError extends AppError {
     super(message, 500);
   }
 }
-

@@ -3,7 +3,7 @@ import {
   GithubRepoInfo, 
   GithubReleaseInfo 
 } from '../types/github.js';
-import { NotFoundError, RateLimitError, ServiceError } from '../types/errors.js';
+import { NotFoundError, RateLimitError, ServiceError } from '@shared/errors';
 import { GithubConfig } from '../types/config.js';
 import { config } from '../config/index.js';
 

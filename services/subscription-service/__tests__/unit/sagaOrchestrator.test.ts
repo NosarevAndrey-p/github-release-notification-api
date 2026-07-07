@@ -7,7 +7,7 @@ import { IRepoManagerService } from '../../src/types/repo-manager.js';
 import { AmqpService } from '@shared/amqp';
 import { ILogger } from '@shared/logger';
 import { mock, mockReset } from 'jest-mock-extended';
-import { NotFoundError } from '../../src/types/errors.js';
+import { NotFoundError } from '@shared/errors';
 
 describe('SagaOrchestrator', () => {
   const mockDb = mock<IDatabaseClient>();

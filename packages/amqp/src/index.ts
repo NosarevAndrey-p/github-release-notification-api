@@ -1,17 +1,6 @@
 import amqp from 'amqplib';
 import { ILogger } from '@shared/logger';
-
-export class AppError extends Error {
-  constructor(message: string, public statusCode: number = 500) {
-    super(message);
-  }
-}
-
-export class AmqpError extends AppError {
-  constructor(message: string) {
-    super(message, 500);
-  }
-}
+import { AppError, AmqpError } from '@shared/errors';
 
 export interface AmqpConfig {
   amqpUrl: string;

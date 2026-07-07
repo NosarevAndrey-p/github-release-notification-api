@@ -1,5 +1,5 @@
 import { scan, handleUntrackEvent, ScannerDeps } from '../../src/services/scannerService.js';
-import { RateLimitError } from '../../src/types/errors.js';
+import { RateLimitError } from '@shared/errors';
 import { mock, mockReset } from 'jest-mock-extended';
 import { IRepositoryStore } from '../../src/types/database.js';
 import { IGitHubService } from '../../src/types/github.js';

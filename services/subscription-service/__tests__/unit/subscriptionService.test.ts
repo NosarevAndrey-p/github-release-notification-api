@@ -13,7 +13,7 @@ import { UUIDProvider } from '../../src/types/subscription.js';
 import { IRepoManagerService } from '../../src/types/repo-manager.js';
 import { AmqpService } from '@shared/amqp';
 import { ILogger } from '@shared/logger';
-import { NotFoundError } from '../../src/types/errors.js';
+import { NotFoundError } from '@shared/errors';
 import { jest } from '@jest/globals';
 
 import { SagaOrchestrator } from '../../src/services/sagaOrchestrator.js';

@@ -1,6 +1,6 @@
 import { SubscriptionDeps, SubscriptionResult } from '../types/subscription.js';
 import { IDatabaseClient, Saga } from '../types/database.js';
-import { NotFoundError, ServiceError } from '../types/errors.js';
+import { NotFoundError, ServiceError } from '@shared/errors';
 import client from 'prom-client';
 
 const sagaDuration = new client.Histogram({

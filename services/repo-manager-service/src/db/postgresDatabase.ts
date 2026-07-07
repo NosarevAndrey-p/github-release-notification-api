@@ -2,7 +2,7 @@ import pg from 'pg';
 import { migrate } from 'postgres-migrations';
 import { IDatabaseClient, Repository, DatabaseResult, OutboxMessage } from '../types/database.js';
 import { DatabaseConfig } from '../types/config.js';
-import { DatabaseError } from '../types/errors.js';
+import { DatabaseError } from '@shared/errors';
 
 const { Pool } = pg;
 

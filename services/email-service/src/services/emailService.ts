@@ -1,6 +1,6 @@
 import { IEmailService, EmailDeps, EmailMessagePayload } from '../types/email.js';
 import { emailStyles as styles } from '../constants/emailStyles.js';
-import { BadRequestError } from '../types/errors.js';
+import { BadRequestError } from '@shared/errors';
 
 export class EmailService implements IEmailService {
   private renderer;

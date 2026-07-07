@@ -1,6 +1,6 @@
 import { IRepositoryStore, Repository } from '../types/database.js';
 import { IGitHubService } from '../types/github.js';
-import { RateLimitError } from '../types/errors.js';
+import { RateLimitError } from '@shared/errors';
 import { ILogger } from '@shared/logger';
 import { IAmqpService } from '@shared/amqp';
 
