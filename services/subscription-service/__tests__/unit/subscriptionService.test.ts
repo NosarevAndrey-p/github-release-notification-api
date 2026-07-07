@@ -14,6 +14,9 @@ import { IRepoManagerService } from '../../src/types/repo-manager.js';
 import { AmqpService } from '@shared/amqp';
 import { ILogger } from '@shared/logger';
 import { NotFoundError } from '../../src/types/errors.js';
+import { jest } from '@jest/globals';
+
+import { SagaOrchestrator } from '../../src/services/sagaOrchestrator.js';
 
 describe('subscriptionService', () => {
   const mockSubStore = mock<ISubscriptionStore>();
@@ -42,11 +45,12 @@ describe('subscriptionService', () => {
   });
 
   describe('subscribeToRepo', () => {
-    it('should subscribe successfully for valid repo and email when notification service responds OK', async () => {
+    it('should subscribe successfully for valid repo and email when Saga completes successfully', async () => {
       mockSubStore.getSubscriptionByEmailAndRepoName.mockResolvedValue(null);
-      mockRepoManagerService.registerRepository.mockResolvedValue(undefined);
       mockCrypto.randomUUID.mockReturnValue('token123');
-      mockEmailService.sendConfirmationEmail.mockResolvedValue(undefined);
+      const startSpy = jest.spyOn(SagaOrchestrator, 'start').mockResolvedValue({
+        status: SubscriptionResult.CREATED,
+      });
 
       const result = await subscribeToRepo(
         { email: 'test@example.com', repo: 'owner/repo' },
@@ -55,13 +59,14 @@ describe('subscriptionService', () => {
 
       expect(result.status).toBe(SubscriptionResult.CREATED);
       expect(mockSubStore.getSubscriptionByEmailAndRepoName).toHaveBeenCalledWith('test@example.com', 'owner/repo');
-      expect(mockRepoManagerService.registerRepository).toHaveBeenCalledWith('owner/repo');
-      expect(mockSubStore.createSubscription).toHaveBeenCalledWith('test@example.com', 'owner/repo', 'token123', 'token123');
+      expect(startSpy).toHaveBeenCalledWith('test@example.com', 'owner/repo', 'token123', 'token123', mockDeps);
+      startSpy.mockRestore();
     });
 
-    it('should throw NotFoundError if notification service returns 404', async () => {
+    it('should throw NotFoundError if Saga fails with repository not found', async () => {
       mockSubStore.getSubscriptionByEmailAndRepoName.mockResolvedValue(null);
-      mockRepoManagerService.registerRepository.mockRejectedValue(new NotFoundError('repository not found'));
+      mockCrypto.randomUUID.mockReturnValue('token123');
+      const startSpy = jest.spyOn(SagaOrchestrator, 'start').mockRejectedValue(new NotFoundError('repository not found'));
 
       await expect(
         subscribeToRepo(
@@ -69,6 +74,7 @@ describe('subscriptionService', () => {
           mockDeps
         )
       ).rejects.toThrow('repository not found');
+      startSpy.mockRestore();
     });
 
     it('should throw ConflictError for duplicate confirmed subscription', async () => {

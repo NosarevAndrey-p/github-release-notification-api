@@ -11,6 +11,9 @@ import pg from 'pg';
 
 import { RepoManagerService } from '../../src/services/repo-manager/repoManagerService.js';
 import { AmqpService } from '@shared/amqp';
+import { SagaOrchestrator } from '../../src/services/sagaOrchestrator.js';
+import { SubscriptionResult } from '../../src/types/subscription.js';
+import { NotFoundError } from '../../src/types/errors.js';
 
 async function seedSubscription(params: {
   email?: string;
@@ -83,6 +86,13 @@ describe('API Routes (Integration)', () => {
       mockCrypto.randomUUID.mockReturnValue('12345678-1234-1234-1234-123456789012');
       mockEmailService.sendConfirmationEmail.mockResolvedValue(undefined);
 
+      const startSpy = jest.spyOn(SagaOrchestrator, 'start').mockImplementation(
+        async (email, repo, confirmToken, unsubscribeToken, deps) => {
+          await deps.subStore.createSubscription(email, repo, confirmToken, unsubscribeToken);
+          return { status: SubscriptionResult.CREATED };
+        }
+      );
+
       const response = await request(app)
         .post('/api/subscribe')
         .send({ email: 'test@example.com', repo: 'owner/repo' });
@@ -96,6 +106,8 @@ describe('API Routes (Integration)', () => {
       expect(subResult.rows[0].confirmed).toBe(false);
       expect(subResult.rows[0].repo_name).toBe('owner/repo');
       expect(subResult.rows[0].confirm_token).toBe('12345678-1234-1234-1234-123456789012');
+
+      startSpy.mockRestore();
     });
 
     it('should return 400 for missing email', async () => {
@@ -131,6 +143,10 @@ describe('API Routes (Integration)', () => {
         ok: false,
       } as unknown as Response);
 
+      const startSpy = jest.spyOn(SagaOrchestrator, 'start').mockRejectedValue(
+        new NotFoundError('repository not found')
+      );
+
       const response = await request(app)
         .post('/api/subscribe')
         .send({ email: 'test@example.com', repo: 'owner/repo' });
@@ -141,6 +157,8 @@ describe('API Routes (Integration)', () => {
       // Verify no records were inserted
       const subs = await testPool.query('SELECT COUNT(*) FROM subscriptions');
       expect(Number(subs.rows[0].count)).toBe(0);
+
+      startSpy.mockRestore();
     });
 
     it('should return 409 for duplicate confirmed subscription', async () => {
