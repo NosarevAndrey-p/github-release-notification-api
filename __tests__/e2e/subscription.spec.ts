@@ -60,13 +60,57 @@ test.describe('E2E - Subscription Flow', () => {
     await expect(row.locator('.badge')).toHaveText('Pending');
     await expect(row.locator('td').nth(2)).toContainText('v1.0.0');
 
-    // 6. Query the database to retrieve the confirmation token
-    const dbSub = await pool.query('SELECT confirm_token, unsubscribe_token FROM subscriptions WHERE email = $1', [email]);
-    expect(dbSub.rows).toHaveLength(1);
-    const { confirm_token, unsubscribe_token } = dbSub.rows[0];
+    // 6. Query the Mailpit API to retrieve the confirmation and unsubscribe links from the sent email
+    interface MailpitMessage {
+      ID: string;
+      Subject: string;
+      To: Array<{ Name: string; Address: string }>;
+    }
+    interface MailpitMessagesResponse {
+      messages?: MailpitMessage[];
+    }
+
+    const mailpitApi = 'http://127.0.0.1:8025/api/v1';
+    await expect.poll(async () => {
+      const res = await page.request.get(`${mailpitApi}/messages`);
+      if (!res.ok()) return null;
+      const data = await res.json() as MailpitMessagesResponse;
+      const msg = data.messages?.find((m) => m.To[0]?.Address === email && m.Subject.includes(repo));
+      return msg ? msg.ID : null;
+    }, {
+      message: 'Wait for confirmation email in Mailpit',
+      timeout: 5000,
+      intervals: [500],
+    }).not.toBeNull();
+
+    const messagesRes = await page.request.get(`${mailpitApi}/messages`);
+    const messagesData = await messagesRes.json() as MailpitMessagesResponse;
+    const targetMsg = messagesData.messages?.find((m) => m.To[0]?.Address === email && m.Subject.includes(repo));
+    if (!targetMsg) {
+      throw new Error('Target message not found in Mailpit');
+    }
+    const messageId = targetMsg.ID;
+
+    const msgRes = await page.request.get(`${mailpitApi}/message/${messageId}`);
+    expect(msgRes.ok()).toBe(true);
+    const msgData = await msgRes.json() as { HTML: string };
+    const htmlBody = msgData.HTML;
+
+    const confirmMatch = htmlBody.match(/href="([^"]*\/api\/confirm\/[^"]*)"/);
+    const unsubscribeMatch = htmlBody.match(/href="([^"]*\/api\/unsubscribe\/[^"]*)"/);
+
+    expect(confirmMatch).not.toBeNull();
+    expect(unsubscribeMatch).not.toBeNull();
+
+    if (!confirmMatch || !unsubscribeMatch) {
+      throw new Error('Confirmation or unsubscribe links not found in email body');
+    }
+
+    const confirmUrl = confirmMatch[1];
+    const unsubscribeUrl = unsubscribeMatch[1];
     
     // 7. Confirm the subscription by calling the API directly
-    const confirmRes = await page.request.get(`/api/confirm/${confirm_token}`);
+    const confirmRes = await page.request.get(confirmUrl);
     expect(confirmRes.ok()).toBe(true);
     const confirmBody = await confirmRes.json();
     expect(confirmBody.message).toContain('subscription confirmed successfully');
@@ -94,7 +138,7 @@ test.describe('E2E - Subscription Flow', () => {
     await expect(row.locator('td').nth(2)).toContainText('v2.0.0');
 
     // 12. Simulate unsubscribing by calling the API directly
-    const unsubscribeRes = await page.request.get(`/api/unsubscribe/${unsubscribe_token}`);
+    const unsubscribeRes = await page.request.get(unsubscribeUrl);
     expect(unsubscribeRes.ok()).toBe(true);
     const unsubscribeBody = await unsubscribeRes.json();
     expect(unsubscribeBody.message).toContain('unsubscribed successfully');

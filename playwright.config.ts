@@ -52,6 +52,7 @@ export default defineConfig({
     stderr: 'pipe',
     env: {
       PORT: '8989',
+      BASE_URL: 'http://127.0.0.1:8989',
       POSTGRES_USER: 'postgres',
       POSTGRES_PASSWORD: 'postgres',
       POSTGRES_HOST: '127.0.0.1',
