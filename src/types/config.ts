@@ -16,8 +16,14 @@ export interface DatabaseConfig {
   schemaPath: string;
 }
 
+export interface GithubConfig {
+  apiUrl: string;
+  token?: string;
+}
+
 export interface Config {
   app: AppConfig;
   smtp: SmtpConfig;
   db: DatabaseConfig;
+  github: GithubConfig;
 }

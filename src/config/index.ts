@@ -18,4 +18,8 @@ export const config: Config = {
     url: process.env.DATABASE_URL || '',
     schemaPath: process.env.DB_SCHEMA_PATH || path.join(process.cwd(), 'src', 'db', 'schema.pg.sql'),
   },
+  github: {
+    apiUrl: process.env.GITHUB_API_URL || 'https://api.github.com',
+    token: process.env.GITHUB_TOKEN,
+  },
 };
