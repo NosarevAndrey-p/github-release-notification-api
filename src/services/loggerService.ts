@@ -38,7 +38,13 @@ export const logger: ILogger = {
       : null;
 
     if (errorArg) {
-      const meta = plainObj ? { error: errorArg, ...plainObj } : { error: errorArg, args: otherArgs };
+      const err = errorArg as Error;
+      const serializedError = {
+        message: err.message,
+        stack: err.stack,
+        name: err.name
+      };
+      const meta = plainObj ? { error: serializedError, ...plainObj } : { error: serializedError, args: otherArgs };
       winstonLogger.error(message, meta);
     } else {
       const meta = plainObj ? plainObj : { args };
