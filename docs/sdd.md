@@ -106,7 +106,7 @@ graph LR
 
 - **Email Dispatch Adapter**: A specialized interface for SMTP communication. It isolates the domain from the specifics of email templating and delivery protocols, ensuring that confirmation and notification messages are reliably queued for dispatch.
 
-- **Persistence Adapter (Repository & Subscription)**: A unified data access layer that supports relational persistence. It utilizes an abstraction that allows the application to remain agnostic of the specific SQL backend, facilitating a seamless transition between local and production environments.
+- **Persistence Adapter (Repository & Subscription)**: A specialized data access layer for PostgreSQL. It isolates the domain from specific SQL dialects and connection management, ensuring consistent data handling across local and production environments.
 
 
 ## Data Model

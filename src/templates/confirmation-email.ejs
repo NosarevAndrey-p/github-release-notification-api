@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Confirm subscription</title>
+  </head>
+  <body style="<%= styles.body %>">
+    <div style="<%= styles.container %>">
+      <h2>Confirm subscription</h2>
+      <p>
+        You subscribed to repository:
+        <span style="<%= styles.repo %>"><%= repo %></span>
+      </p>
+      <p>
+        Click the button below to confirm your subscription and start receiving
+        release notifications.
+      </p>
+      <div>
+        <a
+          href="<%= confirmUrl %>"
+          style="<%= styles.btnBase + styles.confirm %>"
+          >Confirm subscription</a
+        >
+        <a
+          href="<%= unsubscribeUrl %>"
+          style="<%= styles.btnBase + styles.unsubscribe %>"
+          >Unsubscribe</a
+        >
+      </div>
+      <p style="<%= styles.muted %>">
+        If you did not request this, you can safely ignore this email.
+      </p>
+    </div>
+  </body>
+</html>
