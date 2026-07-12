@@ -1,5 +1,6 @@
 export interface AppConfig {
   port: number;
+  grpcPort: number;
   scanInterval: number;
   subscriptionServiceUrl: string;
   amqpUrl: string;

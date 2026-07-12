@@ -1,0 +1,29 @@
+syntax = "proto3";
+
+package repomanager.v1;
+
+service RepoManagerService {
+  rpc FetchLatestTag (FetchLatestTagRequest) returns (FetchLatestTagResponse);
+  rpc FetchLatestTags (FetchLatestTagsRequest) returns (FetchLatestTagsResponse);
+}
+
+message FetchLatestTagRequest {
+  string repo_name = 1;
+}
+
+message FetchLatestTagResponse {
+  string repo_name = 1;
+  optional string last_seen_tag = 2;
+}
+
+message FetchLatestTagsRequest {
+  repeated string repo_names = 1;
+}
+
+message TagValue {
+  optional string last_seen_tag = 1;
+}
+
+message FetchLatestTagsResponse {
+  map<string, TagValue> tags = 1;
+}

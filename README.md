@@ -111,3 +111,24 @@ For detailed, step-by-step instructions on running unit tests, integration tests
   ```bash
   npm run test:e2e
   ```
+
+---
+
+## REST vs gRPC Throughput Benchmark
+
+We conducted a local end-to-end load test using `autocannon` to compare internal HTTP/REST queries and gRPC calls for the `GET /api/subscriptions` flow (which triggers internal tag fetches to `repo-manager-service`).
+
+### Benchmark Parameters
+* **Concurrency**: 20 connections
+* **Duration**: 5 seconds
+
+### Performance Comparison
+
+| Metric | REST Mode | gRPC Mode | Difference |
+| :--- | :--- | :--- | :--- |
+| **Average Latency** | 22.67 ms | 20.02 ms | **-11.68%** (Lower is better) |
+| **Requests / Second** | 862.4 req/s | 974 req/s | **+12.94%** (Higher is better) |
+
+### Why gRPC is Faster:
+1. **HTTP/2 Transport**: gRPC runs over HTTP/2, enabling request multiplexing over a single TCP connection. This eliminates the head-of-line blocking and TCP handshake overhead of traditional HTTP/1.1 REST calls.
+2. **Binary Protocol Buffers**: Data is serialized into a compact binary format rather than verbose JSON strings, resulting in lower CPU parsing overhead and smaller network payloads.

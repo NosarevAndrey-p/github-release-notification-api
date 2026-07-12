@@ -2,6 +2,8 @@ export interface AppConfig {
   port: number;
   scanInterval: number;
   repoManagerServiceUrl: string;
+  repoManagerGrpcUrl: string;
+  repoManagerCommunication: 'rest' | 'grpc';
   emailServiceUrl: string;
   amqpUrl: string;
 }

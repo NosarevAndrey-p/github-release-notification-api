@@ -1,0 +1,5 @@
+version: v1
+plugins:
+  - plugin: buf.build/protocolbuffers/js
+    out: gen
+    opt: import_style=commonjs,binary

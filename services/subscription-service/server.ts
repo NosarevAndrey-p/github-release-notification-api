@@ -2,6 +2,7 @@ import { createApp } from './src/app.js';
 import db from './src/db/database.js';
 import { EmailService } from './src/services/email/emailService.js';
 import { RepoManagerService } from './src/services/repo-manager/repoManagerService.js';
+import { GrpcRepoManagerService } from './src/services/repo-manager/grpcRepoManagerService.js';
 import { AmqpService, OutboxService } from '@shared/amqp';
 import { ReleasePublishedPayload } from './src/types/amqp.js';
 import { handleReleasePublishedEvent } from './src/services/subscriptionService.js';
@@ -22,9 +23,9 @@ const emailService = new EmailService({
   amqpService
 });
 
-const repoManagerService = new RepoManagerService({
-  repoManagerServiceUrl: config.app.repoManagerServiceUrl,
-});
+const repoManagerService = config.app.repoManagerCommunication === 'grpc'
+  ? new GrpcRepoManagerService({ gRPCUrl: config.app.repoManagerGrpcUrl })
+  : new RepoManagerService({ repoManagerServiceUrl: config.app.repoManagerServiceUrl });
 
 const app = createApp({
   subStore: db,

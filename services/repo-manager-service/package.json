@@ -9,12 +9,15 @@
     "build": "tsc -p tsconfig.build.json",
     "lint": "eslint .",
     "test": "node --experimental-vm-modules ../../node_modules/jest/bin/jest.js",
-    "test:integration": "node --experimental-vm-modules ../../node_modules/jest/bin/jest.js --config jest.config.integration.js"
+    "test:integration": "node --experimental-vm-modules ../../node_modules/jest/bin/jest.js --config jest.config.integration.js --runInBand"
   },
   "dependencies": {
-    "@shared/logger": "*",
+    "@grpc/grpc-js": "^1.14.4",
+    "@grpc/proto-loader": "^0.8.1",
     "@shared/amqp": "*",
     "@shared/errors": "*",
+    "@shared/logger": "*",
+    "@shared/proto": "*",
     "amqplib": "^2.0.1",
     "dotenv": "^17.4.1",
     "express": "^5.2.1",

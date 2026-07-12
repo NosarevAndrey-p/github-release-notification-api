@@ -1,0 +1,15 @@
+{
+  "name": "@shared/proto",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "typescript": "^6.0.3",
+    "@types/node": "^25.9.4"
+  }
+}
