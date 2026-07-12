@@ -27,6 +27,30 @@ export interface DatabaseResult {
   rows?: unknown[];
 }
 
+export interface Saga {
+  id: string;
+  type: string;
+  state: string;
+  payload: {
+    email: string;
+    repoName: string;
+    confirmToken: string;
+    unsubscribeToken: string;
+  };
+  steps_completed: string[];
+  created_at: Date;
+  updated_at: Date;
+}
+
+export interface OutboxMessage {
+  id: number;
+  saga_id: string;
+  event_type: string;
+  payload: unknown;
+  processed: boolean;
+  created_at: Date;
+}
+
 export interface ISubscriptionStore {
   getSubscriptionByEmailAndRepoName(email: string, repoName: string): Promise<Subscription | null>;
   createSubscription(
@@ -42,9 +66,21 @@ export interface ISubscriptionStore {
   countSubscriptionsByRepoName(repoName: string): Promise<number>;
   getSubscriptionsByEmail(email: string): Promise<UserSubscriptionRow[]>;
   getConfirmedSubscriptionsByRepoName(repoName: string): Promise<ConfirmedSubscription[]>;
+  deleteSubscriptionByEmailAndRepoName(email: string, repoName: string): Promise<DatabaseResult>;
 }
 
 export interface IDatabaseClient extends ISubscriptionStore {
   initSchema(): Promise<void> | void;
   close(): Promise<void>;
+  startSubscriptionSaga(
+    sagaId: string,
+    email: string,
+    repoName: string,
+    confirmToken: string,
+    unsubscribeToken: string
+  ): Promise<Subscription>;
+  getSaga(id: string): Promise<Saga | null>;
+  updateSagaState(id: string, state: string, stepsCompleted: string[]): Promise<void>;
+  getUnprocessedOutbox(): Promise<OutboxMessage[]>;
+  markOutboxProcessed(ids: number[]): Promise<void>;
 }

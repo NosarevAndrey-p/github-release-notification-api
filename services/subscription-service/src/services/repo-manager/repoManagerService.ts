@@ -1,33 +1,10 @@
 import { IRepoManagerService, RepoManagerDeps } from '../../types/repo-manager.js';
-import { NotFoundError, ServiceError } from '../../types/errors.js';
 
 export class RepoManagerService implements IRepoManagerService {
   private repoManagerServiceUrl: string;
 
   constructor({ repoManagerServiceUrl }: RepoManagerDeps) {
     this.repoManagerServiceUrl = repoManagerServiceUrl;
-  }
-
-  async registerRepository(repoName: string): Promise<void> {
-    try {
-      const res = await fetch(`${this.repoManagerServiceUrl}/api/internal/repositories`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ repo_name: repoName }),
-        signal: AbortSignal.timeout(5000),
-      });
-
-      if (res.status === 404) {
-        throw new NotFoundError('repository not found');
-      }
-
-      if (!res.ok) {
-        throw new ServiceError(`Repo manager service returned ${res.status}`);
-      }
-    } catch (err) {
-      if (err instanceof NotFoundError || err instanceof ServiceError) throw err;
-      throw new ServiceError(`Failed to contact repo manager service: ${err instanceof Error ? err.message : String(err)}`);
-    }
   }
 
   async fetchLatestTag(repoName: string): Promise<string | null> {

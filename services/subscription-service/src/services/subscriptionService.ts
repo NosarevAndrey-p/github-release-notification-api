@@ -2,7 +2,8 @@ import SubscriptionModel, { SubscriptionDeps, SubscriptionResult } from '../type
 import { 
   NotFoundError, 
   ConflictError, 
-} from '../types/errors.js';
+} from '@shared/errors';
+import { SagaOrchestrator } from './sagaOrchestrator.js';
 
 export async function subscribeToRepo({ email, repo }: { email: string; repo: string }, deps: SubscriptionDeps) {
   const existing = await deps.subStore.getSubscriptionByEmailAndRepoName(email, repo); 
@@ -15,19 +16,14 @@ export async function subscribeToRepo({ email, repo }: { email: string; repo: st
     return { status: SubscriptionResult.RESENT };
   }
 
-  await deps.repoManagerService.registerRepository(repo);
-
   const confirmToken = deps.crypto.randomUUID();
   const unsubscribeToken = deps.crypto.randomUUID();
 
-  await deps.subStore.createSubscription(email, repo, confirmToken, unsubscribeToken);
-  await deps.emailService.sendConfirmationEmail(email, repo, confirmToken, unsubscribeToken);
-
-  return { status: SubscriptionResult.CREATED };
+  return await SagaOrchestrator.start(email, repo, confirmToken, unsubscribeToken, deps);
 }
 
 export async function confirmSubscription(token: string, deps: SubscriptionDeps) {
-  const { subStore, repoManagerService } = deps;
+  const { subStore } = deps;
   const sub = await subStore.getSubscriptionByConfirmToken(token);
   if (!sub) {
     throw new NotFoundError('Token not found');
@@ -35,15 +31,6 @@ export async function confirmSubscription(token: string, deps: SubscriptionDeps)
 
   if (sub.confirmed) {
     return { status: SubscriptionResult.ALREADY_CONFIRMED };
-  }
-
-  try {
-    await repoManagerService.registerRepository(sub.repo_name);
-  } catch (err) {
-    if (err instanceof NotFoundError) {
-      await subStore.deleteSubscriptionById(sub.id);
-    }
-    throw err;
   }
 
   await subStore.updateSubscriptionConfirmed(sub.id);

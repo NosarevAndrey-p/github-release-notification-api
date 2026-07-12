@@ -1,4 +1,4 @@
-import { BadRequestError } from '../types/errors.js';
+import { BadRequestError } from '@shared/errors';
 
 const repoRegex = /^[^/]+\/[^/]+$/;
 const tokenRegex = /^[0-9a-f-]{36}$/i;

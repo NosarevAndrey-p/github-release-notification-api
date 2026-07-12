@@ -1,17 +1,6 @@
 import amqp from 'amqplib';
 import { ILogger } from '@shared/logger';
-
-export class AppError extends Error {
-  constructor(message: string, public statusCode: number = 500) {
-    super(message);
-  }
-}
-
-export class AmqpError extends AppError {
-  constructor(message: string) {
-    super(message, 500);
-  }
-}
+import { AppError, AmqpError } from '@shared/errors';
 
 export interface AmqpConfig {
   amqpUrl: string;
@@ -101,3 +90,6 @@ export class AmqpService implements IAmqpService {
     }
   }
 }
+
+export { OutboxService } from './outboxService.js';
+export type { IOutboxMessage, IOutboxStore } from './outboxService.js';

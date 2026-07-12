@@ -2,12 +2,13 @@ import { createApp } from './src/app.js';
 import db from './src/db/database.js';
 import { EmailService } from './src/services/email/emailService.js';
 import { RepoManagerService } from './src/services/repo-manager/repoManagerService.js';
-import { AmqpService } from '@shared/amqp';
+import { AmqpService, OutboxService } from '@shared/amqp';
 import { ReleasePublishedPayload } from './src/types/amqp.js';
 import { handleReleasePublishedEvent } from './src/services/subscriptionService.js';
 import { logger } from '@shared/logger';
 import { config } from './src/config/index.js';
 import crypto from 'crypto';
+import { SagaOrchestrator } from './src/services/sagaOrchestrator.js';
 
 await db.initSchema();
 
@@ -43,9 +44,22 @@ const subscriptionDeps = {
   logger,
 };
 
+const outboxService = new OutboxService({ db, amqpService, logger });
+outboxService.start();
+
 await amqpService.setupQueue('scanner_release_queue', 'release.*');
 await amqpService.consume<ReleasePublishedPayload>('scanner_release_queue', async (payload) => {
   await handleReleasePublishedEvent(payload, subscriptionDeps);
+});
+
+await amqpService.setupQueue('subscription_repo_registered_queue', 'repository.registered');
+await amqpService.consume<{ saga_id: string; repo_name: string }>('subscription_repo_registered_queue', async (payload) => {
+  await SagaOrchestrator.handleRepoRegistered(payload.saga_id, payload.repo_name, subscriptionDeps);
+});
+
+await amqpService.setupQueue('subscription_repo_failed_queue', 'repository.failed');
+await amqpService.consume<{ saga_id: string; error: string }>('subscription_repo_failed_queue', async (payload) => {
+  await SagaOrchestrator.handleRepoFailed(payload.saga_id, payload.error, subscriptionDeps);
 });
 
 const server = app.listen(config.app.port, () => {
@@ -54,6 +68,7 @@ const server = app.listen(config.app.port, () => {
 
 const shutdown = async () => {
   logger.info('Graceful shutdown initiated...');
+  outboxService.stop();
 
   // Force-exit if shutdown takes too long
   setTimeout(() => {
