@@ -112,6 +112,20 @@ graph LR
 
 - **Persistence Adapter (Repository & Subscription)**: A specialized data access layer for PostgreSQL. It isolates the domain from specific SQL dialects and connection management, ensuring consistent data handling across local and production environments.
 
+## Observability Architecture
+
+The system incorporates structured logging and time-series metrics collection to support operational monitoring and performance analysis.
+
+### Logging Pipeline (EFK)
+- **Application Logs**: Generated in structured JSON format using `winston`. It logs API requests (excluding `/health` and `/metrics` to prevent noise), database activities, background scanner progress, and details of rate-limiting encounters.
+- **Log Shipper**: An autonomous `fluent-bit` sidecar container tails the JSON log files (via a shared Docker volume `app-logs` mapped to `/usr/src/app/logs`) and forwards them to the Elasticsearch cluster.
+- **Search & Visualization**: Elasticsearch stores and indexes the logs under the `app-logs` index pattern, and Kibana provides a visual console (`http://localhost:5601`) for querying and debugging.
+
+### Metrics Pipeline (Prometheus & Grafana)
+- **Instrumentation**: The application utilizes `prom-client` to gather system metrics (CPU, Memory, Event Loop) and HTTP RED metrics (Rate, Errors, Duration).
+- **Endpoint Security**: The application exposes `/metrics` internally inside the Docker network. The **Nginx reverse proxy** (listening on port `3000` publically) routes public requests to `/` and `/api` but explicitly blocks `/metrics` with a `403 Forbidden` response.
+- **Scraper**: A Prometheus instance scrapes `/metrics` directly from the `app` container via the internal network.
+- **Dashboard**: Grafana is deployed with automated provisioning to automatically configure the Prometheus datasource and import a pre-configured RED metrics dashboard (`http://localhost:3001`).
 
 ## Data Model
 
