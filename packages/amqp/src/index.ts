@@ -1,24 +1,50 @@
 import amqp from 'amqplib';
-import { ILogger } from '../types/logger.js';
-import { IAmqpService, AmqpConfig } from '../types/amqp.js';
-import { AmqpError } from '../types/errors.js';
+import { ILogger } from '@shared/logger';
+
+export class AppError extends Error {
+  constructor(message: string, public statusCode: number = 500) {
+    super(message);
+  }
+}
+
+export class AmqpError extends AppError {
+  constructor(message: string) {
+    super(message, 500);
+  }
+}
+
+export interface AmqpConfig {
+  amqpUrl: string;
+  logger: ILogger;
+  amqpLib?: typeof amqp;
+}
+
+export interface IAmqpService {
+  connect(retries?: number, delay?: number): Promise<void>;
+  publish<T>(routingKey: string, payload: T): Promise<void>;
+  setupQueue(queueName: string, routingKeyPattern: string): Promise<void>;
+  consume<T>(queueName: string, onMessage: (payload: T) => Promise<void>): Promise<void>;
+  close(): Promise<void>;
+}
 
 export class AmqpService implements IAmqpService {
   private url: string;
   private logger: ILogger;
+  private amqpLib: typeof amqp;
   private connection: amqp.ChannelModel | null = null;
   private channel: amqp.Channel | null = null;
   private readonly exchange = 'app_events_exchange';
 
-  constructor({ amqpUrl, logger }: AmqpConfig) {
+  constructor({ amqpUrl, logger, amqpLib = amqp }: AmqpConfig) {
     this.url = amqpUrl;
     this.logger = logger;
+    this.amqpLib = amqpLib;
   }
 
   async connect(retries = 5, delay = 2000): Promise<void> {
     for (let i = 0; i < retries; i++) {
       try {
-        const conn = await amqp.connect(this.url);
+        const conn = await this.amqpLib.connect(this.url);
         this.connection = conn;
         this.channel = await conn.createChannel();
         await this.channel.assertExchange(this.exchange, 'topic', { durable: true });

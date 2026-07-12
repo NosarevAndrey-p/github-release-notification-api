@@ -1,5 +1,5 @@
 import { EmailService } from '../../src/services/email/emailService.js';
-import { AmqpService } from '../../src/services/amqpService.js';
+import { AmqpService } from '@shared/amqp';
 import { mock, mockReset } from 'jest-mock-extended';
 
 describe('EmailService Client', () => {

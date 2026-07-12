@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { logger } from '../services/loggerService.js';
+import { logger } from '@shared/logger';
 
 export function requestLogger(req: Request, res: Response, next: NextFunction) {
   if (req.path === '/health' || req.path === '/metrics') {

@@ -7,7 +7,8 @@
   "type": "module",
   "main": "server.js",
   "workspaces": [
-    "services/*"
+    "services/*",
+    "packages/*"
   ],
   "scripts": {
     "dev:subscription": "npm run dev -w services/subscription-service",

@@ -73,7 +73,6 @@ export default defineConfig({
         BASE_URL: 'http://127.0.0.1:8989',
         DATABASE_URL: 'postgresql://postgres:postgres@127.0.0.1:5434/repo_manager_test_db',
         SUBSCRIPTION_SERVICE_URL: 'http://127.0.0.1:8989',
-        EMAIL_SERVICE_URL: 'http://127.0.0.1:8991',
         DB_MIGRATIONS_DIR: 'services/repo-manager-service/src/db/migrations',
         NODE_ENV: 'test',
         SCAN_INTERVAL: '1000', // Scan every 1 second for fast and natural E2E test scanning

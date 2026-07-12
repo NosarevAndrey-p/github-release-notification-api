@@ -1,5 +1,5 @@
 import { IEmailService, EmailDeps } from '../../types/email.js';
-import { IAmqpService } from '../../types/amqp.js';
+import { IAmqpService } from '@shared/amqp';
 
 export class EmailService implements IEmailService {
   private amqpService: IAmqpService;

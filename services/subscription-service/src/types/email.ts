@@ -1,4 +1,4 @@
-import { IAmqpService } from './amqp.js';
+import { IAmqpService } from '@shared/amqp';
 
 export interface EmailDeps {
   amqpService: IAmqpService;

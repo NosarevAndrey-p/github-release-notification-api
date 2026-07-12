@@ -3,7 +3,7 @@ import client from 'prom-client';
 import { createErrorMiddleware } from './middleware/errorMiddleware.js';
 import { requestLogger } from './middleware/requestLoggerMiddleware.js';
 import { metricsMiddleware } from './middleware/metricsMiddleware.js';
-import { ILogger } from './types/logger.js';
+import { ILogger } from '@shared/logger';
 
 interface AppDeps {
   logger: ILogger;

@@ -71,7 +71,6 @@ services:
     environment:
       - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/repo_manager_db
       - SUBSCRIPTION_SERVICE_URL=http://subscription-service:3000
-      - EMAIL_SERVICE_URL=http://email-service:3003
       - AMQP_URL=amqp://guest:guest@rabbitmq:5672
       - DB_MIGRATIONS_DIR=src/db/migrations
       - PORT=3002

@@ -3,8 +3,8 @@ import { RateLimitError } from '../../src/types/errors.js';
 import { mock, mockReset } from 'jest-mock-extended';
 import { IRepositoryStore } from '../../src/types/database.js';
 import { IGitHubService } from '../../src/types/github.js';
-import { AmqpService } from '../../src/services/amqpService.js';
-import { ILogger } from '../../src/types/logger.js';
+import { AmqpService } from '@shared/amqp';
+import { ILogger } from '@shared/logger';
 
 describe('scannerService', () => {
   const mockDb = mock<IRepositoryStore>();

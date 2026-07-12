@@ -2,10 +2,10 @@ import { createApp } from './src/app.js';
 import db from './src/db/database.js';
 import { EmailService } from './src/services/email/emailService.js';
 import { RepoManagerService } from './src/services/repo-manager/repoManagerService.js';
-import { AmqpService } from './src/services/amqpService.js';
+import { AmqpService } from '@shared/amqp';
 import { ReleasePublishedPayload } from './src/types/amqp.js';
 import { handleReleasePublishedEvent } from './src/services/subscriptionService.js';
-import { logger } from './src/services/loggerService.js';
+import { logger } from '@shared/logger';
 import { config } from './src/config/index.js';
 import crypto from 'crypto';
 

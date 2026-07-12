@@ -1,8 +1,8 @@
 import { IRepositoryStore, Repository } from '../types/database.js';
 import { IGitHubService } from '../types/github.js';
 import { RateLimitError } from '../types/errors.js';
-import { ILogger } from '../types/logger.js';
-import { IAmqpService } from '../types/amqp.js';
+import { ILogger } from '@shared/logger';
+import { IAmqpService } from '@shared/amqp';
 
 export interface ScannerDeps {
   repoStore: IRepositoryStore;
