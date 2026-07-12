@@ -1,5 +1,7 @@
+import { IAmqpService } from './amqp.js';
+
 export interface EmailDeps {
-  emailServiceUrl: string;
+  amqpService: IAmqpService;
 }
 
 export interface IEmailService {
@@ -7,6 +9,12 @@ export interface IEmailService {
     email: string,
     repo: string,
     confirmToken: string,
+    unsubscribeToken: string
+  ): Promise<void>;
+  sendNotificationEmail(
+    email: string,
+    repo: string,
+    tagName: string,
     unsubscribeToken: string
   ): Promise<void>;
 }

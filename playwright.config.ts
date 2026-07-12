@@ -54,14 +54,15 @@ export default defineConfig({
       env: {
         PORT: '8989',
         DATABASE_URL: 'postgresql://postgres:postgres@127.0.0.1:5434/subscription_test_db',
-        NOTIFICATION_SERVICE_URL: 'http://127.0.0.1:8990',
+        REPO_MANAGER_SERVICE_URL: 'http://127.0.0.1:8990',
         EMAIL_SERVICE_URL: 'http://127.0.0.1:8991',
         DB_MIGRATIONS_DIR: 'services/subscription-service/src/db/migrations',
         NODE_ENV: 'test',
+        AMQP_URL: 'amqp://guest:guest@127.0.0.1:5673',
       },
     },
     {
-      command: 'npx tsx services/notification-service/server.ts',
+      command: 'npx tsx services/repo-manager-service/server.ts',
       url: 'http://127.0.0.1:8990/health',
       reuseExistingServer: !process.env.CI,
       timeout: 30 * 1000,
@@ -70,13 +71,14 @@ export default defineConfig({
       env: {
         PORT: '8990',
         BASE_URL: 'http://127.0.0.1:8989',
-        DATABASE_URL: 'postgresql://postgres:postgres@127.0.0.1:5434/notification_test_db',
+        DATABASE_URL: 'postgresql://postgres:postgres@127.0.0.1:5434/repo_manager_test_db',
         SUBSCRIPTION_SERVICE_URL: 'http://127.0.0.1:8989',
         EMAIL_SERVICE_URL: 'http://127.0.0.1:8991',
-        DB_MIGRATIONS_DIR: 'services/notification-service/src/db/migrations',
+        DB_MIGRATIONS_DIR: 'services/repo-manager-service/src/db/migrations',
         NODE_ENV: 'test',
         SCAN_INTERVAL: '1000', // Scan every 1 second for fast and natural E2E test scanning
         GITHUB_API_URL: 'http://127.0.0.1:3002', // Point to our mock GitHub server
+        AMQP_URL: 'amqp://guest:guest@127.0.0.1:5673',
       },
     },
     {
@@ -92,6 +94,7 @@ export default defineConfig({
         SMTP_PORT: '1025',
         BASE_URL: 'http://127.0.0.1:8989',
         NODE_ENV: 'test',
+        AMQP_URL: 'amqp://guest:guest@127.0.0.1:5673',
       },
     },
   ],

@@ -3,6 +3,8 @@ import { logger } from './src/services/loggerService.js';
 import { NodemailerTransporter } from './src/services/emailTransporter.js';
 import { EjsTemplateRenderer } from './src/services/templateRenderer.js';
 import { EmailService } from './src/services/emailService.js';
+import { EmailMessagePayload } from './src/types/email.js';
+import { AmqpService } from './src/services/amqpService.js';
 import { createApp } from './src/app.js';
 
 const transporter = new NodemailerTransporter(config.smtp);
@@ -14,8 +16,19 @@ const emailService = new EmailService({
   baseUrl: config.baseUrl,
 });
 
+const amqpService = new AmqpService({
+  amqpUrl: config.amqpUrl,
+  logger,
+});
+await amqpService.connect();
+
+
+await amqpService.setupQueue('notification_email_queue', 'email.*');
+await amqpService.consume<EmailMessagePayload>('notification_email_queue', async (payload) => {
+  await emailService.handleEmailMessage(payload);
+});
+
 const app = createApp({
-  emailService,
   logger,
 });
 
@@ -25,10 +38,26 @@ const server = app.listen(config.port, () => {
 
 const shutdown = async () => {
   logger.info('Graceful shutdown initiated...');
-  server.close(() => {
-    logger.info('HTTP server closed. Shutdown complete.');
-    process.exit(0);
-  });
+
+  // Force-exit if shutdown takes too long
+  setTimeout(() => {
+    logger.error('Graceful shutdown timed out, forcing exit.');
+    process.exit(1);
+  }, 10_000).unref();
+
+  try {
+    await new Promise<void>((resolve, reject) =>
+      server.close((err) => (err ? reject(err) : resolve()))
+    );
+    logger.info('HTTP server closed.');
+
+    await amqpService.close();
+    logger.info('AMQP connection closed.');
+  } catch (err) {
+    logger.error('Error during shutdown:', err);
+  }
+
+  process.exit(0);
 };
 
 process.on('SIGTERM', shutdown);

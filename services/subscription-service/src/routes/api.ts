@@ -5,18 +5,11 @@ import {
   unsubscribeFromRepo,
   getSubscriptions,
 } from '../services/subscriptionService.js';
-import { ISubscriptionStore } from '../types/database.js';
-import { IEmailService } from '../types/email.js';
 import { ValidatorService } from '../services/validatorService.js';
-import { UUIDProvider, SubscriptionResult } from '../types/subscription.js';
-import { INotificationService } from '../types/notification.js';
+import { SubscriptionResult, SubscriptionDeps } from '../types/subscription.js';
 
-interface ApiDeps {
-  subStore: ISubscriptionStore;
-  emailService: IEmailService;
-  notificationService: INotificationService;
-  crypto: UUIDProvider;
-}
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
+export interface ApiDeps extends SubscriptionDeps {}
 
 const SUBSCRIPTION_MESSAGES = {
   [SubscriptionResult.CREATED]: 'subscription successful, confirmation email sent',

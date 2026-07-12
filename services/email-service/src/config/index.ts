@@ -12,6 +12,7 @@ const config: Config = {
     user: process.env.SMTP_USER || '',
     pass: process.env.SMTP_PASS || '',
   },
+  amqpUrl: process.env.AMQP_URL || 'amqp://localhost:5672',
 };
 
 export default config;

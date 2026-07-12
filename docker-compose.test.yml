@@ -20,3 +20,17 @@ services:
     ports:
       - "1025:1025"
       - "8025:8025"
+
+  rabbitmq-test:
+    image: rabbitmq:3-management-alpine
+    ports:
+      - "5673:5672"
+      - "15673:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    healthcheck:
+      test: ["CMD-SHELL", "rabbitmq-diagnostics -q ping"]
+      interval: 3s
+      timeout: 3s
+      retries: 10

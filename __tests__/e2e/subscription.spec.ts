@@ -7,7 +7,7 @@ const subPool = new pg.Pool({
 });
 
 const notifPool = new pg.Pool({
-  connectionString: 'postgresql://postgres:postgres@127.0.0.1:5434/notification_test_db',
+  connectionString: 'postgresql://postgres:postgres@127.0.0.1:5434/repo_manager_test_db',
 });
 
 interface MailpitMessage {

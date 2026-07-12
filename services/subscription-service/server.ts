@@ -1,27 +1,51 @@
 import { createApp } from './src/app.js';
 import db from './src/db/database.js';
 import { EmailService } from './src/services/email/emailService.js';
-import { NotificationService } from './src/services/notification/notificationService.js';
+import { RepoManagerService } from './src/services/repo-manager/repoManagerService.js';
+import { AmqpService } from './src/services/amqpService.js';
+import { ReleasePublishedPayload } from './src/types/amqp.js';
+import { handleReleasePublishedEvent } from './src/services/subscriptionService.js';
 import { logger } from './src/services/loggerService.js';
 import { config } from './src/config/index.js';
 import crypto from 'crypto';
 
 await db.initSchema();
 
+const amqpService = new AmqpService({
+  amqpUrl: config.app.amqpUrl,
+  logger,
+});
+await amqpService.connect();
+
 const emailService = new EmailService({ 
-  emailServiceUrl: config.app.emailServiceUrl 
+  amqpService
 });
 
-const notificationService = new NotificationService({
-  notificationServiceUrl: config.app.notificationServiceUrl,
+const repoManagerService = new RepoManagerService({
+  repoManagerServiceUrl: config.app.repoManagerServiceUrl,
 });
 
 const app = createApp({
   subStore: db,
   emailService,
-  notificationService,
+  repoManagerService,
+  amqpService,
   logger,
   crypto,
+});
+
+const subscriptionDeps = {
+  subStore: db,
+  emailService,
+  repoManagerService,
+  amqpService,
+  crypto,
+  logger,
+};
+
+await amqpService.setupQueue('scanner_release_queue', 'release.*');
+await amqpService.consume<ReleasePublishedPayload>('scanner_release_queue', async (payload) => {
+  await handleReleasePublishedEvent(payload, subscriptionDeps);
 });
 
 const server = app.listen(config.app.port, () => {
@@ -30,16 +54,29 @@ const server = app.listen(config.app.port, () => {
 
 const shutdown = async () => {
   logger.info('Graceful shutdown initiated...');
-  server.close(async () => {
+
+  // Force-exit if shutdown takes too long
+  setTimeout(() => {
+    logger.error('Graceful shutdown timed out, forcing exit.');
+    process.exit(1);
+  }, 10_000).unref();
+
+  try {
+    await new Promise<void>((resolve, reject) =>
+      server.close((err) => (err ? reject(err) : resolve()))
+    );
     logger.info('HTTP server closed.');
-    try {
-      await db.close();
-      logger.info('Database connections closed.');
-    } catch (err) {
-      logger.error('Error during database close:', err);
-    }
-    process.exit(0);
-  });
+
+    await amqpService.close();
+    logger.info('AMQP connection closed.');
+
+    await db.close();
+    logger.info('Database connections closed.');
+  } catch (err) {
+    logger.error('Error during shutdown:', err);
+  }
+
+  process.exit(0);
 };
 
 process.on('SIGTERM', shutdown);

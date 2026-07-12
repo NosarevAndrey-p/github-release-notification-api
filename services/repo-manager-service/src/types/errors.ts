@@ -33,3 +33,16 @@ export class ServiceError extends AppError {
     super(message, 500);
   }
 }
+
+export class DatabaseError extends AppError {
+  constructor(message: string) {
+    super(message, 500);
+  }
+}
+
+export class AmqpError extends AppError {
+  constructor(message: string) {
+    super(message, 500);
+  }
+}
+

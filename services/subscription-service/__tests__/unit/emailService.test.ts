@@ -1,23 +1,18 @@
 import { EmailService } from '../../src/services/email/emailService.js';
-import { jest } from '@jest/globals';
+import { AmqpService } from '../../src/services/amqpService.js';
+import { mock, mockReset } from 'jest-mock-extended';
 
 describe('EmailService Client', () => {
-  const emailServiceUrl = 'http://localhost:3003';
+  const mockAmqpService = mock<AmqpService>();
   let emailService: EmailService;
-  let mockFetch: jest.MockedFunction<typeof fetch>;
 
   beforeEach(() => {
-    mockFetch = jest.fn() as jest.MockedFunction<typeof fetch>;
-    mockFetch.mockResolvedValue({
-      ok: true,
-      status: 200,
-    } as unknown as Response);
-    global.fetch = mockFetch;
-
-    emailService = new EmailService({ emailServiceUrl });
+    mockReset(mockAmqpService);
+    mockAmqpService.publish.mockResolvedValue(undefined);
+    emailService = new EmailService({ amqpService: mockAmqpService });
   });
 
-  it('should send confirmation email request to email-service', async () => {
+  it('should publish sendConfirmationEmail event to RabbitMQ', async () => {
     await emailService.sendConfirmationEmail(
       'test@example.com',
       'owner/repo',
@@ -25,19 +20,35 @@ describe('EmailService Client', () => {
       'unsub-token'
     );
 
-    expect(mockFetch).toHaveBeenCalledWith(
-      `${emailServiceUrl}/api/internal/send-email`,
-      expect.objectContaining({
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          type: 'confirmation',
-          to: 'test@example.com',
-          repo: 'owner/repo',
-          confirmToken: 'confirm-token',
-          unsubscribeToken: 'unsub-token',
-        }),
-      })
+    expect(mockAmqpService.publish).toHaveBeenCalledWith(
+      'email.confirmation',
+      {
+        type: 'confirmation',
+        to: 'test@example.com',
+        repo: 'owner/repo',
+        confirmToken: 'confirm-token',
+        unsubscribeToken: 'unsub-token',
+      }
+    );
+  });
+
+  it('should publish sendNotificationEmail event to RabbitMQ', async () => {
+    await emailService.sendNotificationEmail(
+      'test@example.com',
+      'owner/repo',
+      'v1.0.0',
+      'unsub-token'
+    );
+
+    expect(mockAmqpService.publish).toHaveBeenCalledWith(
+      'email.notification',
+      {
+        type: 'notification',
+        to: 'test@example.com',
+        repo: 'owner/repo',
+        tagName: 'v1.0.0',
+        unsubscribeToken: 'unsub-token',
+      }
     );
   });
 });

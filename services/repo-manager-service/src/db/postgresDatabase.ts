@@ -2,6 +2,7 @@ import pg from 'pg';
 import { migrate } from 'postgres-migrations';
 import { IDatabaseClient, Repository, DatabaseResult } from '../types/database.js';
 import { DatabaseConfig } from '../types/config.js';
+import { DatabaseError } from '../types/errors.js';
 
 const { Pool } = pg;
 
@@ -20,7 +21,7 @@ export default class PostgresDatabase implements IDatabaseClient {
 
   constructor(config: DatabaseConfig) {
     if (!config.url) {
-      throw new Error('DatabaseConfig.url must be defined for Postgres');
+      throw new DatabaseError('DatabaseConfig.url must be defined for Postgres');
     }
 
     this.pool = new Pool({ connectionString: config.url });
