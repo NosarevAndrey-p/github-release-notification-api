@@ -64,9 +64,11 @@ graph LR
     subgraph "Entry Points"
         REST_API[HTTP API]
         CRON_Scanner[Background Scanner]
+        WEB_UI[Web Dashboard SPA]
     end
 
     %% Flow: Entry points to Domain
+    WEB_UI --> REST_API
     REST_API --> Sub_Manager
     CRON_Scanner --> Notification_Engine
 
@@ -89,6 +91,8 @@ graph LR
 ## Component Design
 
 ### Entry Points
+
+- **Web Dashboard (Single Page Application)**: A browser-based interface served statically from the Express server. It provides users with a visual console to register subscriptions, view verification statuses, check tracked releases, and trigger unsubscribe flows via direct REST API calls.
 
 - **RESTful API Gateway**: Serves as the primary interface for client interaction. It is responsible for request authentication, input schema validation (specifically for email formats and repository identifiers), and the mapping of HTTP verbs to domain actions.
 

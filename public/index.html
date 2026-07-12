@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Repo Alert - GitHub Release Subscriptions</title>
+  <meta name="description" content="Subscribe to email notifications for new releases of any public GitHub repository. Get notified instantly when updates are published.">
+  <link rel="stylesheet" href="styles.css">
+  <!-- Google Fonts: Outfit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="app-container">
+    <header class="app-header">
+      <div class="logo">
+        <span class="bell-icon">🔔</span>
+        <h1>Repo Alert</h1>
+      </div>
+      <p class="subtitle">Get notified instantly about new releases of GitHub repositories</p>
+    </header>
+
+    <main>
+      <!-- Session Form: Enter Email to start -->
+      <section id="auth-section" class="card fade-in">
+        <h2 id="auth-title">Enter your email to manage subscriptions</h2>
+        <form id="auth-form" class="form-row">
+          <div class="input-group">
+            <label for="user-email-input" class="sr-only">Email Address</label>
+            <input 
+              type="email" 
+              id="user-email-input" 
+              placeholder="Enter your email (e.g. user@example.com)" 
+              required
+              autocomplete="email"
+            >
+          </div>
+          <button type="submit" id="btn-load-dashboard" class="btn btn-primary">Go to Dashboard</button>
+        </form>
+      </section>
+
+      <!-- Dashboard: Visible after entering email -->
+      <div id="dashboard-section" class="dashboard-grid hidden">
+        <!-- Dashboard Header / User Info -->
+        <section class="user-bar card fade-in">
+          <div class="user-info">
+            <span class="user-label">Managing subscriptions for:</span>
+            <span id="active-user-email" class="user-email"></span>
+          </div>
+          <button id="btn-change-email" class="btn btn-secondary btn-sm">Change Email</button>
+        </section>
+
+        <!-- Form to Subscribe to a new repository -->
+        <section class="card fade-in">
+          <h2>Subscribe to a Repository</h2>
+          <p class="section-desc">Enter the GitHub repository name in <code>owner/repo</code> format or paste the full GitHub repository URL.</p>
+          <form id="subscribe-form">
+            <div class="form-group">
+              <label for="repo-input">Repository</label>
+              <input 
+                type="text" 
+                id="repo-input" 
+                placeholder="e.g. facebook/react or https://github.com/facebook/react" 
+                required
+              >
+            </div>
+            <button type="submit" id="btn-subscribe" class="btn btn-primary btn-block">
+              <span id="btn-subscribe-text">Subscribe</span>
+              <span id="btn-subscribe-spinner" class="spinner hidden"></span>
+            </button>
+          </form>
+          <div id="subscribe-alert" class="alert hidden" role="alert"></div>
+        </section>
+
+        <!-- Subscriptions List -->
+        <section class="card fade-in">
+          <div class="section-header">
+            <h2>Your Subscriptions</h2>
+            <button id="btn-refresh" class="btn btn-secondary btn-sm" aria-label="Refresh subscriptions list">
+              <span class="refresh-icon">🔄</span> Refresh
+            </button>
+          </div>
+          
+          <div id="subscriptions-container">
+            <!-- Loading state -->
+            <div id="subscriptions-loading" class="loading-state hidden">
+              <div class="spinner"></div>
+              <p>Fetching subscriptions...</p>
+            </div>
+
+            <!-- Empty state -->
+            <div id="subscriptions-empty" class="empty-state hidden">
+              <p>You haven't subscribed to any repositories yet.</p>
+            </div>
+
+            <!-- Subscriptions table -->
+            <div id="subscriptions-list-wrapper" class="table-responsive hidden">
+              <table class="subscriptions-table">
+                <thead>
+                  <tr>
+                    <th>Repository</th>
+                    <th>Status</th>
+                    <th>Last Seen Tag</th>
+                  </tr>
+                </thead>
+                <tbody id="subscriptions-table-body">
+                  <!-- Row content injected by JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+          
+          <p class="info-note">
+            ⚠️ <strong>How to unsubscribe/confirm:</strong> Please click the confirmation or unsubscribe links in your emails to manage individual statuses.
+          </p>
+        </section>
+      </div>
+    </main>
+
+    <footer class="app-footer">
+      <p>&copy; 2026 Repo Alert. All rights reserved.</p>
+    </footer>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

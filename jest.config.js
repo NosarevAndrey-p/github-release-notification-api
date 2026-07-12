@@ -14,7 +14,9 @@ const config = {
       },
     ],
   },
-  testMatch: ['<rootDir>/src/**/__tests__/**/*.test.ts'],
+  testMatch: [
+    '<rootDir>/__tests__/unit/**/*.test.ts',
+  ],
   modulePathIgnorePatterns: ['<rootDir>/dist/'],
   collectCoverage: true,
   coverageDirectory: 'coverage',
