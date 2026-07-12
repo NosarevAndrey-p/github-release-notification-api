@@ -23,6 +23,8 @@ interface AppDeps {
 export function createApp(deps: AppDeps) {
   const app = express();
 
+  app.set('trust proxy', true);
+
   app.use(json());
   app.use(urlencoded({ extended: true }));
   app.use(requestLogger);
