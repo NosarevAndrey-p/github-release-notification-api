@@ -7,28 +7,69 @@ services:
     - "5433:5432"
     restart: unless-stopped
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-repo_subscriber}
+      POSTGRES_DB: postgres
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_MULTIPLE_DATABASES: subscription_db,notification_db
     volumes: 
       - db-data:/var/lib/postgresql/data
+      - ./infrastructure/db/init-multiple-databases.sh:/docker-entrypoint-initdb.d/init-multiple-databases.sh:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"] 
       interval: 10s
       timeout: 5s
       retries: 5
 
-  app:
-    build: .
+  subscription-service:
+    build:
+      context: .
+      dockerfile: services/subscription-service/Dockerfile
     depends_on:
       db:
         condition: service_healthy
     env_file:
       - .env
     environment:
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-repo_subscriber}
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/subscription_db
+      - NOTIFICATION_SERVICE_URL=http://notification-service:3002
+      - EMAIL_SERVICE_URL=http://email-service:3003
+      - DB_MIGRATIONS_DIR=src/db/migrations
+      - PORT=3000
+      - LOG_DIR=/app/logs
     volumes:
-      - app-logs:/usr/src/app/logs
+      - subscription-logs:/app/logs
+
+  notification-service:
+    build:
+      context: .
+      dockerfile: services/notification-service/Dockerfile
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/notification_db
+      - SUBSCRIPTION_SERVICE_URL=http://subscription-service:3000
+      - EMAIL_SERVICE_URL=http://email-service:3003
+      - DB_MIGRATIONS_DIR=src/db/migrations
+      - PORT=3002
+      - LOG_DIR=/app/logs
+    volumes:
+      - notification-logs:/app/logs
+
+  email-service:
+    build:
+      context: .
+      dockerfile: services/email-service/Dockerfile
+    env_file:
+      - .env
+    environment:
+      - BASE_URL=${BASE_URL:-http://localhost:3000}
+      - PORT=3003
+      - LOG_DIR=/app/logs
+    volumes:
+      - email-logs:/app/logs
 
   nginx:
     image: nginx:1.27-alpine
@@ -38,7 +79,7 @@ services:
     volumes:
       - ./infrastructure/nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
     depends_on:
-      - app
+      - subscription-service
 
   prometheus:
     image: prom/prometheus:v2.49.1
@@ -48,7 +89,9 @@ services:
     volumes:
       - ./infrastructure/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
     depends_on:
-      - app
+      - subscription-service
+      - notification-service
+      - email-service
 
   grafana:
     image: grafana/grafana:10.2.3
@@ -99,16 +142,22 @@ services:
     volumes:
       - ./infrastructure/fluent-bit/fluent-bit.conf:/fluent-bit/etc/fluent-bit.conf
       - ./infrastructure/fluent-bit/parsers.conf:/fluent-bit/etc/parsers.conf
-      - app-logs:/var/log/app
+      - subscription-logs:/var/log/app/subscription
+      - notification-logs:/var/log/app/notification
+      - email-logs:/var/log/app/email
     depends_on:
       elasticsearch:
         condition: service_healthy
-      app:
+      subscription-service:
+        condition: service_started
+      notification-service:
+        condition: service_started
+      email-service:
         condition: service_started
 
 volumes:
   db-data:
   es-data:
-  app-logs:
-
-
+  subscription-logs:
+  notification-logs:
+  email-logs:

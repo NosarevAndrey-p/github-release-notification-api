@@ -43,26 +43,56 @@ export default defineConfig({
   ],
 
   /* Run your local dev server before starting the tests */
-  webServer: {
-    command: 'npx tsx server.ts',
-    url: 'http://127.0.0.1:8989/health',
-    reuseExistingServer: !process.env.CI,
-    timeout: 30 * 1000,
-    stdout: 'pipe',
-    stderr: 'pipe',
-    env: {
-      PORT: '8989',
-      BASE_URL: 'http://127.0.0.1:8989',
-      POSTGRES_USER: 'postgres',
-      POSTGRES_PASSWORD: 'postgres',
-      POSTGRES_HOST: '127.0.0.1',
-      POSTGRES_PORT: '5434',
-      POSTGRES_DB: 'repo_subscriber_test',
-      SMTP_HOST: '127.0.0.1',
-      SMTP_PORT: '1025',
-      NODE_ENV: 'test',
-      SCAN_INTERVAL: '1000', // Scan every 1 second for fast and natural E2E test scanning
-      GITHUB_API_URL: 'http://127.0.0.1:3002', // Point to our mock GitHub server
+  webServer: [
+    {
+      command: 'npx tsx services/subscription-service/server.ts',
+      url: 'http://127.0.0.1:8989/health',
+      reuseExistingServer: !process.env.CI,
+      timeout: 30 * 1000,
+      stdout: 'pipe',
+      stderr: 'pipe',
+      env: {
+        PORT: '8989',
+        DATABASE_URL: 'postgresql://postgres:postgres@127.0.0.1:5434/subscription_test_db',
+        NOTIFICATION_SERVICE_URL: 'http://127.0.0.1:8990',
+        EMAIL_SERVICE_URL: 'http://127.0.0.1:8991',
+        DB_MIGRATIONS_DIR: 'services/subscription-service/src/db/migrations',
+        NODE_ENV: 'test',
+      },
     },
-  },
+    {
+      command: 'npx tsx services/notification-service/server.ts',
+      url: 'http://127.0.0.1:8990/health',
+      reuseExistingServer: !process.env.CI,
+      timeout: 30 * 1000,
+      stdout: 'pipe',
+      stderr: 'pipe',
+      env: {
+        PORT: '8990',
+        BASE_URL: 'http://127.0.0.1:8989',
+        DATABASE_URL: 'postgresql://postgres:postgres@127.0.0.1:5434/notification_test_db',
+        SUBSCRIPTION_SERVICE_URL: 'http://127.0.0.1:8989',
+        EMAIL_SERVICE_URL: 'http://127.0.0.1:8991',
+        DB_MIGRATIONS_DIR: 'services/notification-service/src/db/migrations',
+        NODE_ENV: 'test',
+        SCAN_INTERVAL: '1000', // Scan every 1 second for fast and natural E2E test scanning
+        GITHUB_API_URL: 'http://127.0.0.1:3002', // Point to our mock GitHub server
+      },
+    },
+    {
+      command: 'npx tsx services/email-service/server.ts',
+      url: 'http://127.0.0.1:8991/health',
+      reuseExistingServer: !process.env.CI,
+      timeout: 30 * 1000,
+      stdout: 'pipe',
+      stderr: 'pipe',
+      env: {
+        PORT: '8991',
+        SMTP_HOST: '127.0.0.1',
+        SMTP_PORT: '1025',
+        BASE_URL: 'http://127.0.0.1:8989',
+        NODE_ENV: 'test',
+      },
+    },
+  ],
 });
